@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.env
+.vscode/
+
+# Datos y Modelos (Los gestionaremos con DVC, no con Git)
+data/
+models/
+*.csv
+*.pkl
+*.h5
+
+# Sistema
+.DS_Store
+thumbs.db
