@@ -15,3 +15,4 @@ models/
 # Sistema
 .DS_Store
 thumbs.db
+.venv/
