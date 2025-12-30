@@ -5,8 +5,8 @@ venv/
 .env
 .vscode/
 
-data/
-models/
+#data/
+#models/
 *.csv
 *.pkl
 *.h5
