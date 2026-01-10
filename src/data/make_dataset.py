@@ -78,32 +78,89 @@ def process_data(df_postings, df_job_skills, df_skills_map, df_salaries):
 
 
 def filter_ai_jobs(df):
-    """Filtra solo ofertas relacionadas con IA/Data"""
-    logger.info("🔍 Filtrando sector Tech/IA...")
+    """
+    Filtra ofertas de IA/Data usando REGEX para evitar falsos positivos
+    (ej: evitar que 'Retail' coincida con 'AI').
+    """
+    logger.info("🔍 Filtrando sector AI & Data (Modo Regex Blindado)...")
 
-    keywords = [
-        "AI",
-        "Artificial Intelligence",
-        "Machine Learning",
-        "Deep Learning",
-        "Data Scientist",
-        "Data Science",
-        "NLP",
-        "LLM",
-        "Generative AI",
-        "Computer Vision",
-        "MLOps",
-        "Neural Networks",
-        "GPT",
-        "Big Data",
+    # 1. Palabras clave de Inclusión (Usamos \b para límites de palabra completa)
+    # \bAI\b significa: "AI" aislado (no dentro de Retail)
+    include_keywords = [
+        r"\bAI\b",
+        r"\bArtificial Intelligence\b",
+        r"\bMachine Learning\b",
+        r"\bDeep Learning\b",
+        r"\bData Scientist\b",
+        r"\bData Science\b",
+        r"\bNLP\b",
+        r"\bLLM\b",
+        r"\bGenerative AI\b",
+        r"\bComputer Vision\b",
+        r"\bMLOps\b",
+        r"\bNeural Networks\b",
+        r"\bGPT\b",
+        r"\bBig Data\b",
+        r"\bData Engineer\b",
+        r"\bRobotics\b",
+        r"\bData Analyst\b",  # Analyst solo si lleva Data delante
+        r"\bAnalytics\b",
     ]
 
-    # Filtro insensible a mayúsculas
-    mask = df["title"].str.contains("|".join(keywords), case=False, na=False)
-    df_ai = df[mask].copy()
+    # 2. Palabras PROHIBIDAS (Exclusión)
+    exclude_keywords = [
+        "Sales",
+        "Account Executive",
+        "Representative",
+        "Recruiter",
+        "HR",
+        "Human Resources",
+        "Legal",
+        "Finance",
+        "Nurse",
+        "Driver",
+        "Cafeteria",
+        "Warehouse",
+        "Fulfillment",
+        "Store",
+        "Cashier",
+        "Maintenance",
+        "Mechanic",
+        "Electrician",
+        "Plumber",
+        "Chef",
+        "Cook",
+        "Waiter",
+        "Cleaner",
+        "Janitor",
+        "Technician",
+        "Customer Service",
+        "Property Manager",
+        "Banker",
+        "Merchandiser",
+        "Detailer",
+        "Liaison",
+    ]
 
-    logger.info(f"📉 Filtrado: {len(df)} -> {len(df_ai)} ofertas de IA.")
-    return df_ai
+    # Unimos con OR (|) para regex
+    regex_include = "|".join(include_keywords)
+    regex_exclude = "|".join(exclude_keywords)
+
+    # Paso A: Inclusión (regex=True es vital aquí)
+    mask_include = df["title"].str.contains(
+        regex_include, case=False, na=False, regex=True
+    )
+
+    # Paso B: Exclusión
+    mask_exclude = df["title"].str.contains(
+        regex_exclude, case=False, na=False, regex=True
+    )
+
+    # Lógica: (Es AI) Y (NO es basura)
+    df_clean = df[mask_include & (~mask_exclude)].copy()
+
+    logger.info(f"📉 Filtrado: {len(df)} -> {len(df_clean)} ofertas limpias de IA.")
+    return df_clean
 
 
 def clean_data(df):
