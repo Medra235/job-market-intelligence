@@ -1,16 +1,58 @@
+# Python
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyd
+.Python
 venv/
-.env
-.vscode/
+.venv/
+*.egg-info/
+dist/
+build/
 
+# Environment
+.env
+.env.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Data files (managed by DVC)
 *.csv
 *.pkl
 *.h5
+*.parquet
 
+# ML Models (unless tracked by DVC/MLflow)
+*.pth
+*.ckpt
+*.joblib
+*.model
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
+logs/
+
+# OS
 .DS_Store
-thumbs.db
-.venv/
+Thumbs.db
+
+# Temporary
+tmp/
+temp/
+*.tmp
+*.bak
 
 # MinIO Local Data
 minio_data/
+
+# Agent private notes (not for Git)
+.agent/private/
+.agent/*.draft.md

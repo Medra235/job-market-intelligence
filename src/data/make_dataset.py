@@ -5,21 +5,21 @@ from pathlib import Path
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-# 1. Configuración de Logging
+# 1. Logging Configuration
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
-# 2. Definición de Rutas
+# 2. Path Definitions
 PROJECT_DIR = Path(__file__).resolve().parents[2]
 RAW_DATA_DIR = PROJECT_DIR / "data" / "raw"
 PROCESSED_DATA_DIR = PROJECT_DIR / "data" / "processed"
 
 
 def load_raw_data():
-    """Carga los datasets crudos."""
-    logger.info("⏳ Cargando archivos RAW...")
+    """Load raw datasets."""
+    logger.info("⏳ Loading RAW files...")
     try:
         cols_postings = [
             "job_id",
@@ -49,8 +49,8 @@ def load_raw_data():
 
 
 def process_data(df_postings, df_job_skills, df_skills_map, df_salaries):
-    """Unifica las tablas (Merge)."""
-    logger.info("🔗 Unificando datos...")
+    """Merge tables into unified dataset."""
+    logger.info("🔗 Merging data...")
 
     # Skills
     df_full_skills = pd.merge(df_job_skills, df_skills_map, on="skill_abr", how="left")
@@ -59,10 +59,10 @@ def process_data(df_postings, df_job_skills, df_skills_map, df_salaries):
     )
     df_skills_grouped.rename(columns={"skill_name": "skills"}, inplace=True)
 
-    # Merge Principal
+    # Main Merge
     df_merged = pd.merge(df_postings, df_skills_grouped, on="job_id", how="left")
 
-    # Salarios
+    # Salaries
     df_merged = pd.merge(
         df_merged, df_salaries, on="job_id", how="left", suffixes=("", "_ext")
     )
@@ -79,125 +79,215 @@ def process_data(df_postings, df_job_skills, df_skills_map, df_salaries):
 
 def filter_ai_jobs(df):
     """
-    Filtra ofertas de IA/Data usando REGEX para evitar falsos positivos
-    (ej: evitar que 'Retail' coincida con 'AI').
+    Filter Generative AI and related job postings using REGEX.
+    Searches both title and description for broader coverage.
     """
-    logger.info("🔍 Filtrando sector AI & Data (Modo Regex Blindado)...")
+    logger.info("🔍 Filtering AI & Generative AI sector (Expanded Search)...")
 
-    # 1. Palabras clave de Inclusión (Usamos \b para límites de palabra completa)
-    # \bAI\b significa: "AI" aislado (no dentro de Retail)
-    include_keywords = [
+    # 1. Inclusion Keywords - EXPANDED for Generative AI
+    # Using \\b for word boundaries
+    include_keywords_title = [
+        # AI/ML General
         r"\bAI\b",
         r"\bArtificial Intelligence\b",
         r"\bMachine Learning\b",
         r"\bDeep Learning\b",
+        r"\bML\b",
+        # Data Science
         r"\bData Scientist\b",
         r"\bData Science\b",
-        r"\bNLP\b",
-        r"\bLLM\b",
-        r"\bGenerative AI\b",
-        r"\bComputer Vision\b",
-        r"\bMLOps\b",
-        r"\bNeural Networks\b",
-        r"\bGPT\b",
-        r"\bBig Data\b",
         r"\bData Engineer\b",
-        r"\bRobotics\b",
-        r"\bData Analyst\b",  # Analyst solo si lleva Data delante
+        r"\bData Analyst\b",
+        r"\bData Analytics\b",
+        r"\bBig Data\b",
         r"\bAnalytics\b",
+        # Generative AI (NEW - More specific)
+        r"\bGenerative AI\b",
+        r"\bGenAI\b",
+        r"\bGen AI\b",
+        r"\bLLM\b",
+        r"\bLarge Language Model\b",
+        r"\bGPT\b",
+        r"\bChatGPT\b",
+        r"\bOpenAI\b",
+        r"\bPrompt Engineer\b",
+        r"\bPrompt Engineering\b",
+        r"\bAI Engineer\b",
+        r"\bML Engineer\b",
+        r"\bMLE\b",
+        r"\bLangChain\b",
+        r"\bTransformer\b",
+        r"\bBERT\b",
+        r"\bFoundation Model\b",
+        r"\bDiffusion Model\b",
+        r"\bStable Diffusion\b",
+        r"\bMidjourney\b",
+        r"\bDALL-E\b",
+        r"\bClaude\b",
+        r"\bGemini\b",
+        r"\bCopilot\b",
+        r"\bLlama\b",
+        r"\bMistral\b",
+        r"\bHugging Face\b",
+        r"\bHuggingface\b",
+        # NLP / Language Processing
+        r"\bNLP\b",
+        r"\bNatural Language Processing\b",
+        r"\bNatural Language\b",
+        r"\bConversational AI\b",
+        r"\bChatbot\b",
+        r"\bText Analytics\b",
+        r"\bSentiment Analysis\b",
+        # Computer Vision
+        r"\bComputer Vision\b",
+        r"\bCV Engineer\b",
+        r"\bImage Recognition\b",
+        r"\bObject Detection\b",
+        # MLOps / Infrastructure
+        r"\bMLOps\b",
+        r"\bML Ops\b",
+        r"\bAIOps\b",
+        r"\bAI Ops\b",
+        r"\bNeural Network\b",
+        r"\bDeep Neural\b",
+        # Other related roles
+        r"\bRobotics\b",
+        r"\bReinforcement Learning\b",
+        r"\bRL Engineer\b",
+        r"\bResearch Scientist\b",
+        r"\bApplied Scientist\b",
     ]
 
-    # 2. Palabras PROHIBIDAS (Exclusión)
+    # More general keywords for description search
+    include_keywords_desc = [
+        r"\bGenerative AI\b",
+        r"\bGenAI\b",
+        r"\bLLM\b",
+        r"\bLarge Language Model\b",
+        r"\bGPT-3\b",
+        r"\bGPT-4\b",
+        r"\bChatGPT\b",
+        r"\bOpenAI API\b",
+        r"\bLangChain\b",
+        r"\bPrompt Engineering\b",
+        r"\bTransformer model\b",
+        r"\bHugging Face\b",
+        r"\bFine-tuning\b",
+        r"\bRAG\b",
+        r"\bRetrieval Augmented\b",
+        r"\bVector Database\b",
+        r"\bPinecone\b",
+        r"\bChroma\b",
+        r"\bWeaviate\b",
+        r"\bEmbedding\b",
+        r"\bSemantic Search\b",
+        r"\bNeural Network\b",
+        r"\bDeep Learning\b",
+        r"\bMachine Learning\b",
+        r"\bPyTorch\b",
+        r"\bTensorFlow\b",
+        r"\bKeras\b",
+        r"\bScikit-learn\b",
+        r"\bMLflow\b",
+    ]
+
+    # 2. PROHIBITED Keywords (Exclusion) - Adjusted to avoid over-exclusion
     exclude_keywords = [
-        "Sales",
-        "Account Executive",
-        "Representative",
-        "Recruiter",
-        "HR",
-        "Human Resources",
-        "Legal",
-        "Finance",
-        "Nurse",
-        "Driver",
-        "Cafeteria",
-        "Warehouse",
-        "Fulfillment",
-        "Store",
-        "Cashier",
-        "Maintenance",
-        "Mechanic",
-        "Electrician",
-        "Plumber",
-        "Chef",
-        "Cook",
-        "Waiter",
-        "Cleaner",
-        "Janitor",
-        "Technician",
-        "Customer Service",
-        "Property Manager",
-        "Banker",
-        "Merchandiser",
-        "Detailer",
-        "Liaison",
+        r"\bSales Representative\b",
+        r"\bAccount Executive\b",
+        r"\bRecruiter\b",
+        r"\bHuman Resources\b",
+        r"\bNurse\b",
+        r"\bDriver\b",
+        r"\bCafeteria\b",
+        r"\bWarehouse Worker\b",
+        r"\bFulfillment\b",
+        r"\bStore Manager\b",
+        r"\bCashier\b",
+        r"\bMechanic\b",
+        r"\bElectrician\b",
+        r"\bPlumber\b",
+        r"\bChef\b",
+        r"\bCook\b",
+        r"\bWaiter\b",
+        r"\bCleaner\b",
+        r"\bJanitor\b",
+        r"\bCustomer Service Rep\b",
+        r"\bProperty Manager\b",
+        r"\bTeller\b",
+        r"\bRetail\b",
     ]
 
-    # Unimos con OR (|) para regex
-    regex_include = "|".join(include_keywords)
+    # Combine with OR (|) for regex
+    regex_include_title = "|".join(include_keywords_title)
+    regex_include_desc = "|".join(include_keywords_desc)
     regex_exclude = "|".join(exclude_keywords)
 
-    # Paso A: Inclusión (regex=True es vital aquí)
-    mask_include = df["title"].str.contains(
-        regex_include, case=False, na=False, regex=True
+    # Step A: Inclusion by title
+    mask_include_title = df["title"].str.contains(
+        regex_include_title, case=False, na=False, regex=True
     )
 
-    # Paso B: Exclusión
+    # Step B: Inclusion by description (to capture more GenAI postings)
+    mask_include_desc = df["description"].str.contains(
+        regex_include_desc, case=False, na=False, regex=True
+    )
+
+    # Step C: Exclusion by title
     mask_exclude = df["title"].str.contains(
         regex_exclude, case=False, na=False, regex=True
     )
 
-    # Lógica: (Es AI) Y (NO es basura)
-    df_clean = df[mask_include & (~mask_exclude)].copy()
+    # Logic: (Match in title OR Match in description) AND (NOT junk)
+    df_clean = df[(mask_include_title | mask_include_desc) & (~mask_exclude)].copy()
 
-    logger.info(f"📉 Filtrado: {len(df)} -> {len(df_clean)} ofertas limpias de IA.")
+    logger.info(f"📊 Total original postings: {len(df)}")
+    logger.info(f"   - Match by title: {mask_include_title.sum()}")
+    logger.info(f"   - Match by description: {mask_include_desc.sum()}")
+    logger.info(f"   - Excluded: {mask_exclude.sum()}")
+    logger.info(f"📉 Final result: {len(df_clean)} clean Generative AI job postings.")
     return df_clean
 
 
 def clean_data(df):
-    """Limpieza básica"""
+    """Basic data cleaning."""
     initial_len = len(df)
 
-    # 1. Eliminar duplicados exactos
+    # 1. Remove exact duplicates
     df = df.drop_duplicates(subset=["job_id"])
 
-    # 2. Eliminar ofertas sin descripción (inútiles para RAG)
+    # 2. Remove postings without description (useless for RAG)
     df = df.dropna(subset=["description"])
 
-    logger.info(f"🧹 Limpieza: Se eliminaron {initial_len - len(df)} filas sucias.")
+    # 3. Filter very short descriptions (<100 chars = probably junk)
+    df = df[df["description"].str.len() >= 100]
+
+    logger.info(f"🧹 Cleaning: Removed {initial_len - len(df)} dirty rows.")
     return df
 
 
 def main():
-    logger.info("🚀 Iniciando Pipeline...")
+    logger.info("🚀 Starting Improved Pipeline for Generative AI...")
 
-    # 1. Carga y Merge
+    # 1. Load and Merge
     df_p, df_js, df_sm, df_s = load_raw_data()
     df = process_data(df_p, df_js, df_sm, df_s)
 
-    # 2. Filtrado y Limpieza
+    # 2. Filter and Clean
     df = filter_ai_jobs(df)
     df = clean_data(df)
 
-    # 3. División Train/Test (80% / 20%)
-    logger.info("✂️ Dividiendo en Train/Test...")
+    # 3. Train/Test Split (80% / 20%)
+    logger.info("✂️ Splitting into Train/Test...")
     train, test = train_test_split(df, test_size=0.2, random_state=42)
 
-    # 4. Guardado
+    # 4. Save
     train.to_csv(PROCESSED_DATA_DIR / "train.csv", index=False)
     test.to_csv(PROCESSED_DATA_DIR / "test.csv", index=False)
 
-    logger.info(f"💾 Guardado en {PROCESSED_DATA_DIR}")
+    logger.info(f"💾 Saved to {PROCESSED_DATA_DIR}")
     logger.info(f"   Train: {len(train)} | Test: {len(test)}")
+    logger.info(f"   Total: {len(train) + len(test)} Generative AI job postings")
 
 
 if __name__ == "__main__":
