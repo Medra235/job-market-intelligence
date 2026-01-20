@@ -53,6 +53,10 @@ temp/
 # MinIO Local Data
 minio_data/
 
+# AWS Credentials (never commit)
+.aws/
+*.pem
+
 # Agent private notes (not for Git)
 .agent/private/
 .agent/*.draft.md

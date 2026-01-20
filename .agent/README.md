@@ -14,8 +14,12 @@ Project documentation for AI assistants.
 │   ├── stack.md     # Technology stack
 │   ├── decisions.md # Project decisions log and active risks
 │   └── timeline.md  # CRISP-ML(Q) phases and learning roadmap
-└── workflows/        # Automated processes
-    └── data-pipeline.md
+├── workflows/        # Operational workflows
+│   ├── data-pipeline.md
+│   └── git-workflow.md
+└── docs/             # Technical documentation
+    └── setup/        # Configuration guides
+        └── aws-s3.md # AWS S3 + DVC setup
 ```
 
 ## Usage

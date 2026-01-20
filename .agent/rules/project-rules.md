@@ -29,6 +29,20 @@ Limit strictly to what's defined in [.agent/specs/stack.md](cci:7://...):
 - Type hints required
 - Modular, reusable code
 
+## Python Environment
+
+- **ALWAYS** activate `.venv` before running Python, DVC, or pip commands
+- If `.venv/bin/activate` exists, prepend `source .venv/bin/activate &&` to commands
+- Never run Python commands in global environment
+
+## Git Workflow
+
+- **ALWAYS** work on `develop` branch, NEVER on `main`
+- Before proposing commits, verify current branch with `git branch --show-current`
+- If on `main`, switch to `develop` first: `git checkout develop`
+- Only merge to `main` when explicitly requested by user for stable releases
+- See [.agent/workflows/git-workflow.md](cci:7://...) for full workflow
+
 ## Document Management
 
 If we make a decision that changes plan/stack/dates, end response with:

@@ -10,12 +10,12 @@
 
 ## Phase 2: Data Engineering (Week 3-6 | Dec 9 - Jan 12)
 
-- [ ] Infrastructure migration: GDrive → MinIO/S3
-- [ ] ETL Pipeline
-- [ ] Data cleaning
-- [ ] Feature Engineering
-- [ ] Data splitting
-- [ ] EDA (Exploratory Data Analysis)
+- [ ] Infrastructure migration: GDrive → MinIO/S3 (MinIO configured, pending integration)
+- [x] ETL Pipeline (documented and functional)
+- [x] Data cleaning (duplicates, short descriptions removed)
+- [x] Feature Engineering (skill_count, desc_length, has_salary)
+- [x] Data splitting (80/20 train/test)
+- [x] EDA (Exploratory Data Analysis)
 
 ## Phase 3: ML Engineering (Week 7-8 | Jan 13 - Feb 2)
 

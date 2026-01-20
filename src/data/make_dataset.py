@@ -1,3 +1,8 @@
+"""ETL pipeline for GenAI job market dataset.
+
+Processes raw LinkedIn data into train/test splits with engineered features.
+"""
+
 # src/data/make_dataset.py
 import logging
 from pathlib import Path
@@ -5,13 +10,12 @@ from pathlib import Path
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-# 1. Logging Configuration
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
-# 2. Path Definitions
+
 PROJECT_DIR = Path(__file__).resolve().parents[2]
 RAW_DATA_DIR = PROJECT_DIR / "data" / "raw"
 PROCESSED_DATA_DIR = PROJECT_DIR / "data" / "processed"
@@ -19,7 +23,7 @@ PROCESSED_DATA_DIR = PROJECT_DIR / "data" / "processed"
 
 def load_raw_data():
     """Load raw datasets."""
-    logger.info("⏳ Loading RAW files...")
+    logger.info("Loading raw files...")
     try:
         cols_postings = [
             "job_id",
@@ -44,13 +48,13 @@ def load_raw_data():
 
         return df_postings, df_job_skills, df_skills_map, df_salaries
     except FileNotFoundError as e:
-        logger.error(f"❌ Error: {e}")
+        logger.error(f"Error: {e}")
         raise
 
 
 def process_data(df_postings, df_job_skills, df_skills_map, df_salaries):
     """Merge tables into unified dataset."""
-    logger.info("🔗 Merging data...")
+    logger.info("Merging data...")
 
     # Skills
     df_full_skills = pd.merge(df_job_skills, df_skills_map, on="skill_abr", how="left")
@@ -78,22 +82,15 @@ def process_data(df_postings, df_job_skills, df_skills_map, df_salaries):
 
 
 def filter_ai_jobs(df):
-    """
-    Filter Generative AI and related job postings using REGEX.
-    Searches both title and description for broader coverage.
-    """
-    logger.info("🔍 Filtering AI & Generative AI sector (Expanded Search)...")
+    """Filter GenAI and AI-related job postings."""
+    logger.info("Filtering AI & GenAI jobs...")
 
-    # 1. Inclusion Keywords - EXPANDED for Generative AI
-    # Using \\b for word boundaries
     include_keywords_title = [
-        # AI/ML General
         r"\bAI\b",
         r"\bArtificial Intelligence\b",
         r"\bMachine Learning\b",
         r"\bDeep Learning\b",
         r"\bML\b",
-        # Data Science
         r"\bData Scientist\b",
         r"\bData Science\b",
         r"\bData Engineer\b",
@@ -101,7 +98,6 @@ def filter_ai_jobs(df):
         r"\bData Analytics\b",
         r"\bBig Data\b",
         r"\bAnalytics\b",
-        # Generative AI (NEW - More specific)
         r"\bGenerative AI\b",
         r"\bGenAI\b",
         r"\bGen AI\b",
@@ -130,7 +126,6 @@ def filter_ai_jobs(df):
         r"\bMistral\b",
         r"\bHugging Face\b",
         r"\bHuggingface\b",
-        # NLP / Language Processing
         r"\bNLP\b",
         r"\bNatural Language Processing\b",
         r"\bNatural Language\b",
@@ -138,19 +133,16 @@ def filter_ai_jobs(df):
         r"\bChatbot\b",
         r"\bText Analytics\b",
         r"\bSentiment Analysis\b",
-        # Computer Vision
         r"\bComputer Vision\b",
         r"\bCV Engineer\b",
         r"\bImage Recognition\b",
         r"\bObject Detection\b",
-        # MLOps / Infrastructure
         r"\bMLOps\b",
         r"\bML Ops\b",
         r"\bAIOps\b",
         r"\bAI Ops\b",
         r"\bNeural Network\b",
         r"\bDeep Neural\b",
-        # Other related roles
         r"\bRobotics\b",
         r"\bReinforcement Learning\b",
         r"\bRL Engineer\b",
@@ -158,7 +150,6 @@ def filter_ai_jobs(df):
         r"\bApplied Scientist\b",
     ]
 
-    # More general keywords for description search
     include_keywords_desc = [
         r"\bGenerative AI\b",
         r"\bGenAI\b",
@@ -191,7 +182,6 @@ def filter_ai_jobs(df):
         r"\bMLflow\b",
     ]
 
-    # 2. PROHIBITED Keywords (Exclusion) - Adjusted to avoid over-exclusion
     exclude_keywords = [
         r"\bSales Representative\b",
         r"\bAccount Executive\b",
@@ -218,76 +208,76 @@ def filter_ai_jobs(df):
         r"\bRetail\b",
     ]
 
-    # Combine with OR (|) for regex
     regex_include_title = "|".join(include_keywords_title)
     regex_include_desc = "|".join(include_keywords_desc)
     regex_exclude = "|".join(exclude_keywords)
 
-    # Step A: Inclusion by title
     mask_include_title = df["title"].str.contains(
         regex_include_title, case=False, na=False, regex=True
     )
-
-    # Step B: Inclusion by description (to capture more GenAI postings)
     mask_include_desc = df["description"].str.contains(
         regex_include_desc, case=False, na=False, regex=True
     )
-
-    # Step C: Exclusion by title
     mask_exclude = df["title"].str.contains(
         regex_exclude, case=False, na=False, regex=True
     )
 
-    # Logic: (Match in title OR Match in description) AND (NOT junk)
     df_clean = df[(mask_include_title | mask_include_desc) & (~mask_exclude)].copy()
 
-    logger.info(f"📊 Total original postings: {len(df)}")
-    logger.info(f"   - Match by title: {mask_include_title.sum()}")
-    logger.info(f"   - Match by description: {mask_include_desc.sum()}")
-    logger.info(f"   - Excluded: {mask_exclude.sum()}")
-    logger.info(f"📉 Final result: {len(df_clean)} clean Generative AI job postings.")
+    logger.info(
+        f"Filtered {len(df)} → {len(df_clean)} jobs (title: {mask_include_title.sum()}, desc: {mask_include_desc.sum()}, excluded: {mask_exclude.sum()})"
+    )
     return df_clean
 
 
 def clean_data(df):
-    """Basic data cleaning."""
+    """Remove duplicates and invalid entries."""
     initial_len = len(df)
 
-    # 1. Remove exact duplicates
     df = df.drop_duplicates(subset=["job_id"])
-
-    # 2. Remove postings without description (useless for RAG)
     df = df.dropna(subset=["description"])
-
-    # 3. Filter very short descriptions (<100 chars = probably junk)
     df = df[df["description"].str.len() >= 100]
 
-    logger.info(f"🧹 Cleaning: Removed {initial_len - len(df)} dirty rows.")
+    logger.info(f"Cleaned dataset: removed {initial_len - len(df)} rows")
+    return df
+
+
+def create_basic_features(df):
+    """Create engineered features."""
+    logger.info("Creating features...")
+
+    df["skill_count"] = df["skills"].apply(
+        lambda x: len(x) if isinstance(x, list) else 0
+    )
+    df["desc_length"] = df["description"].str.split().str.len()
+    df["has_salary"] = df["max_salary"].notna().astype(int)
+
+    logger.info(
+        f"Features created - avg skills: {df['skill_count'].mean():.1f}, avg desc_length: {df['desc_length'].mean():.0f}, with_salary: {df['has_salary'].mean()*100:.1f}%"
+    )
+
     return df
 
 
 def main():
-    logger.info("🚀 Starting Improved Pipeline for Generative AI...")
+    """Run the complete ETL pipeline."""
+    logger.info("Starting pipeline...")
 
-    # 1. Load and Merge
     df_p, df_js, df_sm, df_s = load_raw_data()
     df = process_data(df_p, df_js, df_sm, df_s)
-
-    # 2. Filter and Clean
     df = filter_ai_jobs(df)
     df = clean_data(df)
+    df = create_basic_features(df)
 
-    # 3. Train/Test Split (80% / 20%)
-    logger.info("✂️ Splitting into Train/Test...")
+    logger.info("Splitting into train/test sets...")
     train, test = train_test_split(df, test_size=0.2, random_state=42)
 
-    # 4. Save
     train.to_csv(PROCESSED_DATA_DIR / "train.csv", index=False)
     test.to_csv(PROCESSED_DATA_DIR / "test.csv", index=False)
 
-    logger.info(f"💾 Saved to {PROCESSED_DATA_DIR}")
-    logger.info(f"   Train: {len(train)} | Test: {len(test)}")
-    logger.info(f"   Total: {len(train) + len(test)} Generative AI job postings")
+    logger.info(f"Saved to {PROCESSED_DATA_DIR}")
+    logger.info(f"Train: {len(train)} | Test: {len(test)} | Total: {len(df)}")
+    logger.info("Pipeline completed successfully")
 
 
 if __name__ == "__main__":

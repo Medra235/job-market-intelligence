@@ -6,3 +6,6 @@
     access_key_id = minioadmin
     secret_access_key = minioadmin
     use_ssl = false
+['remote "aws-s3"']
+    url = s3://tfg-market-intelligence-jmedrano/dvc-storage
+    region = eu-west-1
