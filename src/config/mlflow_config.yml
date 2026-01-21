@@ -1,0 +1,21 @@
+# MLflow Configuration
+
+experiment_name: "skills-classification"
+tracking_uri: "./mlruns"
+artifact_location: "./mlartifacts"
+
+# Model parameters
+model:
+  type: "logistic_regression"
+  random_state: 42
+  max_iter: 1000
+
+# Data paths
+data:
+  train_path: "data/processed/train.csv"
+  test_path: "data/processed/test.csv"
+
+# Training config
+training:
+  test_size: 0.2
+  random_state: 42

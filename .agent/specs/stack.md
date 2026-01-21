@@ -6,7 +6,7 @@
 | ---------------- | ------------------------------ |
 | Python 3.12.x    | Main language                  |
 | Pandas/Polars    | Data processing                |
-| DVC + MinIO      | Data versioning (local S3)     |
+| DVC + s3         | Data versioning                |
 | Ruff             | Linter & Formatter             |
 | Pandera          | Schema validation              |
 | DuckDB           | Analytical SQL over files      |
