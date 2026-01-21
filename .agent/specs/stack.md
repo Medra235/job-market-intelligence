@@ -50,8 +50,8 @@
 **Strategy**: Hybrid "Cloud-Smart" (Local Compute + Cloud Storage)
 
 - **Development**: All local (Docker) with RTX 5070 Ti GPU
-- **Current storage**: MinIO (S3 compatible, local Docker)
-- **Future storage**: AWS S3 Free Tier (optional migration)
+- **Current storage**: AWS S3 (Free Tier)
+- **Previous storage**: MinIO (deprecated due to version incompatibility)
 - **Demo deployment**:
   - Option A: Railway (Free Tier)
   - Option B: Localhost + Ngrok

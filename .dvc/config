@@ -1,11 +1,13 @@
 [core]
-    remote = storage
+    remote = aws-s3
 ['remote "storage"']
     url = s3://tfg-market-intelligence
     endpointurl = http://localhost:9000
     access_key_id = minioadmin
     secret_access_key = minioadmin
     use_ssl = false
+    ssl_verify = false
+    listobjects = true
 ['remote "aws-s3"']
     url = s3://tfg-market-intelligence-jmedrano/dvc-storage
     region = eu-west-1

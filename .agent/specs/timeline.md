@@ -10,7 +10,7 @@
 
 ## Phase 2: Data Engineering (Week 3-6 | Dec 9 - Jan 12)
 
-- [ ] Infrastructure migration: GDrive → MinIO/S3 (MinIO configured, pending integration)
+- [x] Infrastructure migration: GDrive → AWS S3 (MinIO deprecated, S3 configured as default)
 - [x] ETL Pipeline (documented and functional)
 - [x] Data cleaning (duplicates, short descriptions removed)
 - [x] Feature Engineering (skill_count, desc_length, has_salary)
