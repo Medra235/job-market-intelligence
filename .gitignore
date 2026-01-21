@@ -60,3 +60,7 @@ minio_data/
 # Agent private notes (not for Git)
 .agent/private/
 .agent/*.draft.md
+
+# MLflow tracking
+/mlruns
+/mlartifacts

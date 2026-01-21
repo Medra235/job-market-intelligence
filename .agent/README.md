@@ -15,7 +15,6 @@ Project documentation for AI assistants.
 │   ├── decisions.md # Project decisions log and active risks
 │   └── timeline.md  # CRISP-ML(Q) phases and learning roadmap
 ├── workflows/        # Operational workflows
-│   ├── data-pipeline.md
 │   └── git-workflow.md
 └── docs/             # Technical documentation
     └── setup/        # Configuration guides
