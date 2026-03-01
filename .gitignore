@@ -64,5 +64,5 @@ minio_data/
 /mlruns
 /mlartifacts
 
-# Agent configuration (local only, not for GitHub)
+# Agent configuration (local only)
 .agent/
