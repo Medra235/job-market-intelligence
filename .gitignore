@@ -57,10 +57,12 @@ minio_data/
 .aws/
 *.pem
 
-# Agent private notes (not for Git)
-.agent/private/
-.agent/*.draft.md
+# Personal notes and private documentation
+/private/
 
 # MLflow tracking
 /mlruns
 /mlartifacts
+
+# Agent configuration (local only, not for GitHub)
+.agent/
