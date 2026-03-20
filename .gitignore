@@ -50,19 +50,16 @@ temp/
 *.tmp
 *.bak
 
-# MinIO Local Data
-minio_data/
-
 # AWS Credentials (never commit)
 .aws/
 *.pem
 
-# Personal notes and private documentation
+# Personal notes
 /private/
 
 # MLflow tracking
 /mlruns
 /mlartifacts
 
-# Agent configuration (local only)
+# Agent configuration
 .agent/
