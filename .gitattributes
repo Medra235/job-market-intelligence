@@ -1,0 +1,6 @@
+# linguist-detectable=false excludes notebooks entirely from the repo language stats
+# filter=nbstripout keeps git history clean by removing heavy notebook outputs
+*.ipynb linguist-detectable=false filter=nbstripout diff=ipynb
+
+# Normalize line endings (prevents Windows/Linux format conflicts)
+* text=auto
