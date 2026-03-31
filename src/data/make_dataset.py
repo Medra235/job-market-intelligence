@@ -8,9 +8,8 @@ import logging
 from pathlib import Path
 
 import pandas as pd
+from categories import CATEGORY_PRIORITY, EXCLUDE_KEYWORDS, JOB_CATEGORIES
 from sklearn.model_selection import train_test_split
-
-from src.data.categories import CATEGORY_PRIORITY, EXCLUDE_KEYWORDS, JOB_CATEGORIES
 
 # Logging Configuration
 logging.basicConfig(
