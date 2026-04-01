@@ -24,7 +24,7 @@ RAW_DATA_DIR = PROJECT_DIR / "data" / "raw"
 PROCESSED_DATA_DIR = PROJECT_DIR / "data" / "processed"
 
 
-def load_raw_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def load_raw_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     """Load raw datasets from CSV files."""
     logger.info("Loading raw files...")
     try:
@@ -38,46 +38,25 @@ def load_raw_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFr
         ]
         df_postings = pd.read_csv(RAW_DATA_DIR / "postings.csv", usecols=cols_postings)
 
-        df_job_skills = pd.read_csv(
-            RAW_DATA_DIR / "job_skills.csv", usecols=["job_id", "skill_abr"]
-        )
-        df_skills_map = pd.read_csv(
-            RAW_DATA_DIR / "skills.csv", usecols=["skill_abr", "skill_name"]
-        )
         df_salaries = pd.read_csv(
             RAW_DATA_DIR / "salaries.csv",
             usecols=["job_id", "max_salary", "pay_period"],
         )
 
-        return df_postings, df_job_skills, df_skills_map, df_salaries
+        return df_postings, df_salaries
 
     except FileNotFoundError as e:
         logger.error(f"Error: {e}")
         raise
 
 
-def process_data(
-    df_postings: pd.DataFrame,
-    df_job_skills: pd.DataFrame,
-    df_skills_map: pd.DataFrame,
-    df_salaries: pd.DataFrame,
-) -> pd.DataFrame:
-    """Merge tables into unified dataset."""
+def process_data(df_postings: pd.DataFrame, df_salaries: pd.DataFrame) -> pd.DataFrame:
+    """Merge postings with salary data into a unified dataset."""
     logger.info("Merging data...")
 
-    # Skills
-    df_full_skills = pd.merge(df_job_skills, df_skills_map, on="skill_abr", how="left")
-    df_skills_grouped = (
-        df_full_skills.groupby("job_id")["skill_name"].apply(list).reset_index()
-    )
-    df_skills_grouped.rename(columns={"skill_name": "skills"}, inplace=True)
-
-    # Main Merge
-    df_merged = pd.merge(df_postings, df_skills_grouped, on="job_id", how="left")
-
-    # Salaries
+    # Enrich postings with salary data from the separate salaries table
     df_merged = pd.merge(
-        df_merged, df_salaries, on="job_id", how="left", suffixes=("", "_ext")
+        df_postings, df_salaries, on="job_id", how="left", suffixes=("", "_ext")
     )
     df_merged["max_salary"] = df_merged["max_salary"].fillna(
         df_merged["max_salary_ext"]
@@ -185,15 +164,11 @@ def create_basic_features(df: pd.DataFrame) -> pd.DataFrame:
     """Create engineered features."""
     logger.info("Creating features...")
 
-    df["skill_count"] = df["skills"].apply(
-        lambda x: len(x) if isinstance(x, list) else 0
-    )
     df["desc_length"] = df["description"].str.split().str.len()
     df["has_salary"] = df["max_salary"].notna().astype(int)
 
     logger.info(
-        f"Features created - avg skills: {df['skill_count'].mean():.1f}, "
-        f"avg desc_length: {df['desc_length'].mean():.0f}, "
+        f"Features created - avg desc_length: {df['desc_length'].mean():.0f}, "
         f"with_salary: {df['has_salary'].mean()*100:.1f}%"
     )
 
@@ -204,8 +179,8 @@ def main() -> None:
     """Run the complete ETL pipeline."""
     logger.info("Starting pipeline...")
 
-    df_p, df_js, df_sm, df_s = load_raw_data()
-    df = process_data(df_p, df_js, df_sm, df_s)
+    df_p, df_s = load_raw_data()
+    df = process_data(df_p, df_s)
     df = filter_tech_jobs(df)
     df = clean_data(df)
     df = create_basic_features(df)
