@@ -168,7 +168,10 @@ JOB_CATEGORIES: dict[str, dict[str, list[str]]] = {
             r"\bFullstack\b",
             r"\bFull Stack\b",
         ],
-        "desc": [],
+        "desc": [
+            r"\bfull stack\b",
+            r"\bfull-stack\b",
+        ],
     },
     "DevOps/SRE": {
         "title": [
@@ -250,9 +253,6 @@ JOB_CATEGORIES: dict[str, dict[str, list[str]]] = {
             r"\bSelenium\b",
             r"\bCypress\b",
             r"\btest automation\b",
-            r"\bquality assurance\b",
-            r"\bunit testing\b",
-            r"\bmanual testing\b",
         ],
     },
     "Mobile": {
@@ -332,10 +332,10 @@ CATEGORY_PRIORITY: list[str] = [
     "Cybersecurity",
     "DevOps/SRE",
     "Cloud",
-    "QA/Testing",
+    "Full Stack",
     "Mobile",
     "Frontend",
     "Backend",
-    "Full Stack",
+    "QA/Testing",
     "Software Engineer",
 ]
