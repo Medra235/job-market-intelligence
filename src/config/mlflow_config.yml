@@ -1,14 +1,6 @@
 # MLflow Configuration
-
-experiment_name: "skills-classification"
-tracking_uri: "./mlruns"
-artifact_location: "./mlartifacts"
-
-# Model parameters
-model:
-  type: "logistic_regression"
-  random_state: 42
-  max_iter: 1000
+experiment_name: "job-category-classification"
+tracking_uri: "sqlite:///mlflow.db"
 
 # Data paths
 data:
@@ -17,5 +9,20 @@ data:
 
 # Training config
 training:
-  test_size: 0.2
   random_state: 42
+  target_col: "job_category"
+
+# Model parameters
+models:
+  logistic_regression:
+    max_iter: 1000
+    C: 1.0
+    random_state: 42
+    class_weight: "balanced"
+
+  random_forest:
+    n_estimators: 100
+    max_depth: 20
+    min_samples_split: 5
+    random_state: 42
+    class_weight: "balanced"
