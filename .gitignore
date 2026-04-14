@@ -60,6 +60,11 @@ temp/
 # MLflow tracking
 /mlruns
 /mlartifacts
+/mlflow.db
 
 # Agent configuration
 .agents/
+AGENTS.md
+.codex
+
+.venv_old/
