@@ -54,7 +54,9 @@ def prepare_features(df: pd.DataFrame) -> pd.DataFrame:
     if missing:
         raise ValueError(f"Missing columns in dataframe: {missing}")
 
-    return df[required_cols]
+    features = df[required_cols].copy()
+    features[NUMERIC_FEATURES] = features[NUMERIC_FEATURES].astype("float64")
+    return features
 
 
 def build_preprocessor() -> ColumnTransformer:
