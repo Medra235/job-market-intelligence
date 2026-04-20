@@ -61,10 +61,9 @@ temp/
 /mlruns
 /mlartifacts
 /mlflow.db
+/models/
 
 # Agent configuration
 .agents/
 AGENTS.md
 .codex
-
-.venv_old/
