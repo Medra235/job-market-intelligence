@@ -5,6 +5,7 @@ Filters for technology sector roles and categorizes them by domain.
 """
 
 import logging
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -148,6 +149,15 @@ def filter_tech_jobs(df: pd.DataFrame) -> pd.DataFrame:
     return df_filtered
 
 
+def normalize_dedup_text(text: str) -> str:
+    """Normalize text for conservative repost detection."""
+    text = str(text).lower().strip()
+    text = re.sub(r"\s+", " ", text)
+    text = re.sub(r"\d+", " ", text)
+    text = re.sub(r"[^a-z]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     """Remove duplicates and invalid entries."""
     initial_len = len(df)
@@ -156,7 +166,29 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.dropna(subset=["description"])
     df = df[df["description"].str.len() >= 100]
 
-    logger.info(f"Cleaned dataset: removed {initial_len - len(df)} rows")
+    df = df.copy()
+    # Dedup against reposts that only differ in spacing, punctuation, or numeric requisition IDs.
+    df["title_norm"] = df["title"].fillna("").map(normalize_dedup_text)
+    df["description_norm"] = df["description"].map(normalize_dedup_text)
+    duplicate_text_rows = int(
+        df.duplicated(subset=["title_norm", "description_norm"]).sum()
+    )
+    duplicate_text_groups = int(
+        (
+            df.groupby(["title_norm", "description_norm"], dropna=False).size().gt(1)
+        ).sum()
+    )
+    df = df.drop_duplicates(subset=["title_norm", "description_norm"]).drop(
+        columns=["title_norm", "description_norm"]
+    )
+
+    logger.info(
+        "Cleaned dataset: %s rows removed (%s text duplicates in %s groups)",
+        initial_len - len(df),
+        duplicate_text_rows,
+        duplicate_text_groups,
+    )
+
     return df
 
 
@@ -169,7 +201,7 @@ def create_basic_features(df: pd.DataFrame) -> pd.DataFrame:
 
     logger.info(
         f"Features created - avg desc_length: {df['desc_length'].mean():.0f}, "
-        f"with_salary: {df['has_salary'].mean()*100:.1f}%"
+        f"with_salary: {df['has_salary'].mean() * 100:.1f}%"
     )
 
     return df
