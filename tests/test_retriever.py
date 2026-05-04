@@ -44,6 +44,7 @@ class FakeClient:
                         "job_id": 123,
                         "title": "Data Engineer",
                         "job_category": "Data Engineering",
+                        "description": "Full Python, SQL and Airflow role.",
                         "description_preview": "Python, SQL and Airflow role.",
                     },
                 )
@@ -59,6 +60,7 @@ def test_retrieved_document_from_qdrant_point() -> None:
             "job_id": 456,
             "title": "Frontend Developer",
             "job_category": "Frontend",
+            "description": "Full React and TypeScript role.",
             "description_preview": "React and TypeScript role.",
         },
     )
@@ -68,6 +70,7 @@ def test_retrieved_document_from_qdrant_point() -> None:
     assert document.job_id == 456
     assert document.title == "Frontend Developer"
     assert document.job_category == "Frontend"
+    assert document.description == "Full React and TypeScript role."
     assert document.description_preview == "React and TypeScript role."
     assert document.score == 0.82
     assert document.payload == point.payload
@@ -103,12 +106,14 @@ def test_retriever_queries_qdrant_with_expected_parameters() -> None:
             job_id=123,
             title="Data Engineer",
             job_category="Data Engineering",
+            description="Full Python, SQL and Airflow role.",
             description_preview="Python, SQL and Airflow role.",
             score=0.75,
             payload={
                 "job_id": 123,
                 "title": "Data Engineer",
                 "job_category": "Data Engineering",
+                "description": "Full Python, SQL and Airflow role.",
                 "description_preview": "Python, SQL and Airflow role.",
             },
         )

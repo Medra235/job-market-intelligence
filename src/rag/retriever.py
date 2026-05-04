@@ -22,6 +22,7 @@ class RetrievedDocument:
     job_id: int | None
     title: str
     job_category: str
+    description: str
     description_preview: str
     score: float
     payload: dict[str, Any]
@@ -34,6 +35,7 @@ class RetrievedDocument:
             job_id=payload.get("job_id"),
             title=payload.get("title", ""),
             job_category=payload.get("job_category", ""),
+            description=payload.get("description", ""),
             description_preview=payload.get("description_preview", ""),
             score=point.score,
             payload=payload,

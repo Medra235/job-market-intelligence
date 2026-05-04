@@ -126,6 +126,7 @@ def build_payload(row: pd.Series) -> dict:
         "job_id": int(row["job_id"]),
         "title": row["title"].strip(),
         "job_category": row["job_category"],
+        "description": description,
         "description_preview": description[:DESCRIPTION_PREVIEW_CHARS],
     }
 
