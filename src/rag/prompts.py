@@ -102,7 +102,7 @@ def format_retrieved_documents(
         formatted_docs.append(
             "\n".join(
                 [
-                    f"[{index}] score={document.score:.4f}",
+                    f"[{index}]",
                     f"title: {document.title or '<missing>'}",
                     f"category: {document.job_category or '<missing>'}",
                     f"job_id: {document.job_id or '<missing>'}",

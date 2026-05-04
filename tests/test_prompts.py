@@ -45,7 +45,8 @@ def test_format_retrieved_documents_includes_payload_fields() -> None:
     """Retrieved documents should be formatted as compact evidence."""
     formatted = format_retrieved_documents([sample_document()])
 
-    assert "[1] score=0.7123" in formatted
+    assert "[1]" in formatted
+    assert "score=0.7123" not in formatted
     assert "title: Data Engineer" in formatted
     assert "category: Data Engineering" in formatted
     assert "job_id: 123" in formatted
