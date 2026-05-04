@@ -1,0 +1,86 @@
+"""Single-turn RAG chain for the job-market assistant."""
+
+from dataclasses import dataclass
+
+from src.rag.generator import GenerationConfig, OllamaGenerator
+from src.rag.prompts import (
+    DEFAULT_MAX_CONTEXT_DOCUMENTS,
+    DEFAULT_MAX_PREVIEW_CHARS,
+    SYSTEM_PROMPT,
+    build_rag_prompt,
+)
+from src.rag.memory import ConversationMemory
+from src.rag.retriever import QdrantRetriever, RetrievedDocument
+
+
+@dataclass(frozen=True)
+class RagResponse:
+    """Response returned by the single-turn RAG chain."""
+
+    answer: str
+    query: str
+    documents: list[RetrievedDocument]
+    prompt: str
+
+
+class JobMarketRagChain:
+    """Single-turn RAG chain with lightweight conversational memory."""
+
+    def __init__(
+        self,
+        retriever: QdrantRetriever | None = None,
+        generator: OllamaGenerator | None = None,
+        generation_config: GenerationConfig | None = None,
+        memory: ConversationMemory | None = None,
+        system_prompt: str = SYSTEM_PROMPT,
+        max_context_documents: int = DEFAULT_MAX_CONTEXT_DOCUMENTS,
+        max_preview_chars: int = DEFAULT_MAX_PREVIEW_CHARS,
+    ) -> None:
+        self.retriever = retriever or QdrantRetriever()
+        self.generator = generator or OllamaGenerator()
+        self.generation_config = generation_config or GenerationConfig()
+        self.memory = memory or ConversationMemory()
+        self.system_prompt = system_prompt
+        self.max_context_documents = max_context_documents
+        self.max_preview_chars = max_preview_chars
+
+    def answer(
+        self,
+        query: str,
+        top_k: int = DEFAULT_MAX_CONTEXT_DOCUMENTS,
+        score_threshold: float | None = None,
+    ) -> RagResponse:
+        """Answer one user query using retrieved job-posting context."""
+        query = query.strip()
+        if not query:
+            raise ValueError("Query cannot be empty.")
+
+        documents = self.retriever.retrieve(
+            query=query,
+            top_k=top_k,
+            score_threshold=score_threshold,
+        )
+        prompt = build_rag_prompt(
+            query=query,
+            documents=documents,
+            conversation_history=self.memory.messages,
+            max_documents=self.max_context_documents,
+            max_history_messages=self.memory.max_messages,
+            max_preview_chars=self.max_preview_chars,
+        )
+        answer = self.generator.generate(
+            prompt=prompt,
+            system_prompt=self.system_prompt,
+            config=self.generation_config,
+        )
+        self.memory.add_turn(query=query, answer=answer)
+        return RagResponse(
+            answer=answer,
+            query=query,
+            documents=documents,
+            prompt=prompt,
+        )
+
+    def clear_memory(self) -> None:
+        """Forget the accumulated conversation history."""
+        self.memory.clear()
