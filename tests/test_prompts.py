@@ -29,20 +29,26 @@ def sample_document() -> RetrievedDocument:
 
 def test_system_prompt_sets_spanish_grounded_behavior() -> None:
     """The chatbot system prompt should define language and grounding rules."""
+    normalized_prompt = CHATBOT_SYSTEM_PROMPT.replace("\n", " ")
+
     assert "Answer in Spanish" in CHATBOT_SYSTEM_PROMPT
     assert "retrieved job postings" in CHATBOT_SYSTEM_PROMPT
     assert "Do not invent" in CHATBOT_SYSTEM_PROMPT
     assert "Do not promise employability" in CHATBOT_SYSTEM_PROMPT
     assert "Be practical, specific, and complete" in CHATBOT_SYSTEM_PROMPT
-    assert "skills relevantes, ordenadas por prioridad" in CHATBOT_SYSTEM_PROMPT
-    assert "Limit the skills section to the 4 most important items" in (
-        CHATBOT_SYSTEM_PROMPT.replace("\n", " ")
+    assert "Use a flexible conversational format" in CHATBOT_SYSTEM_PROMPT
+    assert "always producing a full report" in CHATBOT_SYSTEM_PROMPT
+    assert "simple follow-up questions" in normalized_prompt
+    assert "usually 3 or 4 items are enough" in normalized_prompt
+    assert "cite them with bracketed source numbers" in normalized_prompt
+    assert "Avoid repeating a full skills/gaps/recommendations template" in (
+        normalized_prompt
     )
     assert "Be precise about evidence strength" in CHATBOT_SYSTEM_PROMPT
-    assert "not as a broad market trend" in CHATBOT_SYSTEM_PROMPT.replace("\n", " ")
+    assert "not as a broad market trend" in normalized_prompt
     assert "If the retrieved context is not enough" in CHATBOT_SYSTEM_PROMPT
     assert "turn one-off evidence into a broad trend" in CHATBOT_SYSTEM_PROMPT
-    assert "shorten general context explanation" in CHATBOT_SYSTEM_PROMPT
+    assert "Prefer concise complete answers" in CHATBOT_SYSTEM_PROMPT
 
 
 def test_profile_evaluation_system_prompt_is_report_specific() -> None:
@@ -68,7 +74,7 @@ def test_format_retrieved_documents_includes_payload_fields() -> None:
     assert "score=0.7123" not in formatted
     assert "title: Data Engineer" in formatted
     assert "category: Data Engineering" in formatted
-    assert "job_id: 123" in formatted
+    assert "job_id: 123" not in formatted
     assert "Python, SQL, Airflow and AWS are required for this role." in formatted
     assert "Short preview that should not be used" not in formatted
 

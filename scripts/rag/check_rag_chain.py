@@ -89,7 +89,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--num-predict",
         type=int,
-        default=1024,
+        default=1536,
         help="Maximum generated tokens.",
     )
     return parser.parse_args()

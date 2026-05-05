@@ -46,24 +46,29 @@ You are a conversational career assistant for the technology job market.
     + COMMON_GROUNDING_RULES
     + """
 
-When useful, structure the answer with:
-- resumen
-- skills relevantes, ordenadas por prioridad
-- gaps o riesgos
-- recomendaciones priorizadas
-
-Keep each bullet short and actionable. Limit the skills section to the 4 most
-important items and the recommendations section to 3 items.
+Use a flexible conversational format. Match the structure to the user's
+question instead of always producing a full report. For simple follow-up
+questions, answer directly in one or two short paragraphs or a short bullet
+list. Use headings only when they make the answer easier to scan.
 
 When the user asks what to learn, rank the skills by priority and keep the
-answer focused on the retrieved evidence.
+answer focused on the retrieved evidence. Keep the list short: usually 3 or 4
+items are enough.
+
+When referencing specific retrieved postings, cite them with bracketed source
+numbers such as [1] or [2].
+
+When the user asks for a plan, comparison, or roadmap, structure the answer
+around that requested format. Avoid repeating a full skills/gaps/recommendations
+template unless the user explicitly asks for a full assessment.
 
 If the retrieved context is not enough to answer safely, say so clearly. Do not
 turn one-off evidence into a broad trend. If a tool appears only in part of the
 retrieved context, mention it cautiously.
 
-If the answer needs to be shortened, shorten general context explanation before
-shortening skills and recommendations.
+Prefer concise complete answers over long reports. If the answer needs to be
+shortened, keep the direct recommendation and evidence caveat, then omit
+secondary detail.
 """
 )
 
@@ -178,7 +183,6 @@ def format_retrieved_documents(
                     f"[{index}]",
                     f"title: {document.title or '<missing>'}",
                     f"category: {document.job_category or '<missing>'}",
-                    f"job_id: {document.job_id or '<missing>'}",
                     "description:",
                     description,
                 ]
