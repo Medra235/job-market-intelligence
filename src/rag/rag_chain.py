@@ -4,9 +4,9 @@ from dataclasses import dataclass
 
 from src.rag.generator import GenerationConfig, OllamaGenerator
 from src.rag.prompts import (
+    CHATBOT_SYSTEM_PROMPT,
     DEFAULT_MAX_CONTEXT_DOCUMENTS,
     DEFAULT_MAX_PREVIEW_CHARS,
-    SYSTEM_PROMPT,
     build_rag_prompt,
 )
 from src.rag.memory import ConversationMemory
@@ -32,7 +32,7 @@ class JobMarketRagChain:
         generator: OllamaGenerator | None = None,
         generation_config: GenerationConfig | None = None,
         memory: ConversationMemory | None = None,
-        system_prompt: str = SYSTEM_PROMPT,
+        system_prompt: str = CHATBOT_SYSTEM_PROMPT,
         max_context_documents: int = DEFAULT_MAX_CONTEXT_DOCUMENTS,
         max_preview_chars: int = DEFAULT_MAX_PREVIEW_CHARS,
     ) -> None:

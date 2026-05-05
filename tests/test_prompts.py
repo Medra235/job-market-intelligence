@@ -4,8 +4,9 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 
 from src.rag.prompts import (
+    CHATBOT_SYSTEM_PROMPT,
     NO_CONTEXT_NOTICE,
-    SYSTEM_PROMPT,
+    PROFILE_EVALUATION_SYSTEM_PROMPT,
     build_rag_prompt,
     format_conversation_history,
     format_retrieved_documents,
@@ -27,18 +28,36 @@ def sample_document() -> RetrievedDocument:
 
 
 def test_system_prompt_sets_spanish_grounded_behavior() -> None:
-    """The system prompt should define language and grounding rules."""
-    assert "Answer in Spanish" in SYSTEM_PROMPT
-    assert "retrieved job postings" in SYSTEM_PROMPT
-    assert "Do not invent" in SYSTEM_PROMPT
-    assert "Do not promise employability" in SYSTEM_PROMPT
-    assert "Be practical, specific, and complete" in SYSTEM_PROMPT
-    assert "skills relevantes, ordenadas por prioridad" in SYSTEM_PROMPT
+    """The chatbot system prompt should define language and grounding rules."""
+    assert "Answer in Spanish" in CHATBOT_SYSTEM_PROMPT
+    assert "retrieved job postings" in CHATBOT_SYSTEM_PROMPT
+    assert "Do not invent" in CHATBOT_SYSTEM_PROMPT
+    assert "Do not promise employability" in CHATBOT_SYSTEM_PROMPT
+    assert "Be practical, specific, and complete" in CHATBOT_SYSTEM_PROMPT
+    assert "skills relevantes, ordenadas por prioridad" in CHATBOT_SYSTEM_PROMPT
     assert "Limit the skills section to the 4 most important items" in (
-        SYSTEM_PROMPT.replace("\n", " ")
+        CHATBOT_SYSTEM_PROMPT.replace("\n", " ")
     )
-    assert "Be precise about evidence strength" in SYSTEM_PROMPT
-    assert "not as a broad market trend" in SYSTEM_PROMPT.replace("\n", " ")
+    assert "Be precise about evidence strength" in CHATBOT_SYSTEM_PROMPT
+    assert "not as a broad market trend" in CHATBOT_SYSTEM_PROMPT.replace("\n", " ")
+    assert "If the retrieved context is not enough" in CHATBOT_SYSTEM_PROMPT
+    assert "turn one-off evidence into a broad trend" in CHATBOT_SYSTEM_PROMPT
+    assert "shorten general context explanation" in CHATBOT_SYSTEM_PROMPT
+
+
+def test_profile_evaluation_system_prompt_is_report_specific() -> None:
+    """Profile evaluator rules should be separate from chatbot formatting."""
+    assert "structured profile evaluation reports" in PROFILE_EVALUATION_SYSTEM_PROMPT
+    assert "not an open-ended chatbot flow" in PROFILE_EVALUATION_SYSTEM_PROMPT
+    assert "Use classifier certainty as follows" in PROFILE_EVALUATION_SYSTEM_PROMPT
+    assert "alta: use the predicted category" in PROFILE_EVALUATION_SYSTEM_PROMPT
+    assert "baja: present it as tentative" in PROFILE_EVALUATION_SYSTEM_PROMPT
+    assert "appear explicitly in the user's text" in PROFILE_EVALUATION_SYSTEM_PROMPT
+    assert "Do not classify the seniority" in PROFILE_EVALUATION_SYSTEM_PROMPT
+    assert "ofertas con requisitos más avanzados" in PROFILE_EVALUATION_SYSTEM_PROMPT
+    assert "skills relevantes, ordenadas por prioridad" not in (
+        PROFILE_EVALUATION_SYSTEM_PROMPT
+    )
 
 
 def test_format_retrieved_documents_includes_payload_fields() -> None:
@@ -135,9 +154,9 @@ def test_build_rag_prompt_includes_context_and_query() -> None:
     assert "Data Engineer" in prompt
     assert "What should I learn for Data Engineering?" in prompt
     assert "evidencia principal" in prompt
-    assert "3 recomendaciones accionables, ordenadas por prioridad" in prompt
-    assert "No conviertas una evidencia puntual en una tendencia general" in prompt
-    assert "Mantén cada punto breve" in prompt
+    assert "3 recomendaciones accionables, ordenadas por prioridad" not in prompt
+    assert "No conviertas una evidencia puntual en una tendencia general" not in prompt
+    assert "Mantén cada punto breve" not in prompt
 
 
 @pytest.mark.parametrize("query", ["", "   "])
