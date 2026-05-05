@@ -12,6 +12,10 @@ PROJECT_DIR = Path(__file__).resolve().parents[2]
 if str(PROJECT_DIR) not in sys.path:
     sys.path.insert(0, str(PROJECT_DIR))
 
+from src.models.profile_classifier import (  # noqa: E402
+    DEFAULT_MODEL_TYPE,
+    JobCategoryClassifier,
+)
 from src.rag.generator import (  # noqa: E402
     DEFAULT_OLLAMA_MODEL,
     DEFAULT_OLLAMA_URL,
@@ -34,7 +38,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--target-role",
         default=None,
-        help="Optional target role used to guide retrieval and evaluation.",
+        help=(
+            "Optional user-declared target role used to guide retrieval and "
+            "evaluation; it is not the classifier output."
+        ),
     )
     parser.add_argument("--top-k", type=int, default=5, help="Retriever top_k.")
     parser.add_argument(
@@ -85,6 +92,16 @@ def parse_args() -> argparse.Namespace:
         default=1024,
         help="Maximum generated tokens.",
     )
+    parser.add_argument(
+        "--use-classifier",
+        action="store_true",
+        help="Add the classical job-category prediction as an auxiliary signal.",
+    )
+    parser.add_argument(
+        "--classifier-model-type",
+        default=DEFAULT_MODEL_TYPE,
+        help="Local model folder under models/ used for classification.",
+    )
     return parser.parse_args()
 
 
@@ -101,9 +118,15 @@ def main() -> None:
         model_name=args.llm_model,
         base_url=args.ollama_url,
     )
+    category_classifier = (
+        JobCategoryClassifier(model_type=args.classifier_model_type)
+        if args.use_classifier
+        else None
+    )
     evaluator = ProfileEvaluator(
         retriever=retriever,
         generator=generator,
+        category_classifier=category_classifier,
         generation_config=GenerationConfig(num_predict=args.num_predict),
         max_context_documents=args.max_context_documents,
         max_preview_chars=args.max_preview_chars,
@@ -115,6 +138,18 @@ def main() -> None:
     )
 
     print(response.evaluation)
+    if response.category_prediction:
+        confidence = (
+            f" | confidence={response.category_prediction.confidence:.4f}"
+            if response.category_prediction.confidence is not None
+            else ""
+        )
+        print(
+            "\nClassifier signal: "
+            f"{response.category_prediction.label} "
+            f"({response.category_prediction.model_type})"
+            f"{confidence}"
+        )
     print("\nRetrieved documents:")
     for index, document in enumerate(response.documents, start=1):
         print(
