@@ -2,7 +2,7 @@
 Feature Engineering Pipeline
 
 Defines the preprocessing pipeline for the job category classification task.
-The pipeline combines TF-IDF vectorization of text content with numeric features.
+The pipeline applies TF-IDF vectorization to job title and description text.
 
 Target:
     - job_category (12 classes) -> encoded with LabelEncoder in train_model.py
@@ -27,7 +27,6 @@ PROCESSED_DATA_DIR = PROJECT_DIR / "data" / "processed"
 
 # Columns used as features
 TEXT_COMBINED_COL = "text_combined"
-NUMERIC_FEATURES = ["desc_length", "has_salary"]
 
 
 def add_combined_text(df: pd.DataFrame) -> pd.DataFrame:
@@ -48,14 +47,13 @@ def prepare_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     df = add_combined_text(df)
 
-    required_cols = [TEXT_COMBINED_COL] + NUMERIC_FEATURES
+    required_cols = [TEXT_COMBINED_COL]
 
     missing = [c for c in required_cols if c not in df.columns]
     if missing:
         raise ValueError(f"Missing columns in dataframe: {missing}")
 
     features = df[required_cols].copy()
-    features[NUMERIC_FEATURES] = features[NUMERIC_FEATURES].astype("float64")
     return features
 
 
@@ -65,7 +63,6 @@ def build_preprocessor() -> ColumnTransformer:
 
     Returns an unfitted ColumnTransformer that combines:
     - TF-IDF on the combined text field (title + description)
-    - Passthrough for numeric features (desc_length, has_salary)
 
     The ColumnTransformer is intended to be used as the first step
     of a full sklearn Pipeline alongside a classifier.
@@ -80,7 +77,6 @@ def build_preprocessor() -> ColumnTransformer:
     preprocessor = ColumnTransformer(
         transformers=[
             ("tfidf", tfidf, TEXT_COMBINED_COL),
-            ("numeric", "passthrough", NUMERIC_FEATURES),
         ],
         remainder="drop",
     )

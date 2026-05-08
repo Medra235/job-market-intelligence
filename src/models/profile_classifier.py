@@ -35,8 +35,6 @@ def build_profile_feature_frame(
             {
                 "title": "User profile",
                 "description": profile_text,
-                "desc_length": len(profile_text),
-                "has_salary": 0,
             }
         ]
     )

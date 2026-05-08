@@ -9,10 +9,8 @@ def test_build_profile_feature_frame_matches_training_feature_schema() -> None:
     """Profile text should be adapted to the existing sklearn pipeline schema."""
     features = build_profile_feature_frame(profile_text="Python, SQL, pandas and basic AWS.")
 
-    assert list(features.columns) == ["text_combined", "desc_length", "has_salary"]
+    assert list(features.columns) == ["text_combined"]
     assert features.loc[0, "text_combined"].startswith("User profile Python")
-    assert features.loc[0, "desc_length"] == len("Python, SQL, pandas and basic AWS.")
-    assert features.loc[0, "has_salary"] == 0.0
 
 
 def test_build_profile_feature_frame_uses_generic_title() -> None:

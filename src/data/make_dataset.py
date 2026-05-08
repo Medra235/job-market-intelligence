@@ -193,15 +193,13 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def create_basic_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Create engineered features."""
+    """Create analytical features kept for EDA and dashboard views."""
     logger.info("Creating features...")
 
-    df["desc_length"] = df["description"].str.split().str.len()
     df["has_salary"] = df["max_salary"].notna().astype(int)
 
     logger.info(
-        f"Features created - avg desc_length: {df['desc_length'].mean():.0f}, "
-        f"with_salary: {df['has_salary'].mean() * 100:.1f}%"
+        f"Features created - with_salary: {df['has_salary'].mean() * 100:.1f}%"
     )
 
     return df
