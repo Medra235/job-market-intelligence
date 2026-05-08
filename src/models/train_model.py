@@ -1,23 +1,27 @@
 """
 Multiclass Job Category Classifier - Training Script
 
-Trains and registers two baseline model candidates (Logistic Regression and
+Trains and registers two model candidates (Logistic Regression and
 Random Forest) for multiclass classification of job postings into 12 categories.
 
 Pipeline:
-    - Feature preprocessing: TF-IDF on text + numeric passthrough (build_features.py)
+    - Feature preprocessing: TF-IDF on title + description text (build_features.py)
     - LabelEncoder for the target variable (job_category)
     - GridSearchCV: hyperparameter search using cross-validation on train data
     - MLflow tracking: parameters, CV metrics, and model artifacts
     - joblib serialization of the LabelEncoder for inference
 
 Usage:
-    python src/models/train_model.py
+    python src/models/train_model.py --model both
+    python src/models/train_model.py --model lr
+    python src/models/train_model.py --model rf
 """
 
+import argparse
 import logging
 import sys
 from pathlib import Path
+from time import perf_counter
 
 import joblib
 import mlflow
@@ -48,12 +52,27 @@ logger = logging.getLogger(__name__)
 
 CONFIG_PATH = PROJECT_DIR / "src" / "config" / "mlflow_config.yml"
 MODELS_DIR = PROJECT_DIR / "models"
+MODEL_CHOICES = ("both", "lr", "rf")
 
 
 def load_config() -> dict:
     """Load MLflow and model configuration from YAML file."""
     with open(CONFIG_PATH, "r") as f:
         return yaml.safe_load(f)
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Train job category classifier candidates."
+    )
+    parser.add_argument(
+        "--model",
+        choices=MODEL_CHOICES,
+        default="both",
+        help="Model candidate to train: both, lr, or rf.",
+    )
+    return parser.parse_args()
 
 
 def load_data(data_path: str) -> pd.DataFrame:
@@ -88,8 +107,8 @@ def build_pipeline(classifier) -> Pipeline:
     """
     Assemble the full Scikit-Learn pipeline.
 
-    Combines the ColumnTransformer preprocessor (TF-IDF + numeric passthrough)
-    with the provided classifier into a single Pipeline object.
+    Combines the ColumnTransformer text preprocessor with the provided classifier
+    into a single Pipeline object.
     """
     preprocessor = build_preprocessor()
     return Pipeline(
@@ -102,11 +121,19 @@ def build_pipeline(classifier) -> Pipeline:
 
 def serializable_params(params: dict) -> dict:
     """Return MLflow-friendly params without nested search configuration."""
-    return {
-        key: str(value) if value is None else value
-        for key, value in params.items()
-        if key != "param_grid"
-    }
+    serializable = {}
+    for key, value in params.items():
+        if key == "param_grid":
+            continue
+        if isinstance(value, dict):
+            for nested_key, nested_value in value.items():
+                output_key = f"{key}_{nested_key}"
+                serializable[output_key] = (
+                    str(nested_value) if nested_value is None else nested_value
+                )
+        else:
+            serializable[key] = str(value) if value is None else value
+    return serializable
 
 
 def build_search(pipeline: Pipeline, param_grid: dict, config: dict) -> GridSearchCV:
@@ -155,7 +182,9 @@ def train_and_log(
         # Train
         logger.info(f"Training '{run_name}' with GridSearchCV...")
         search = build_search(pipeline, param_grid, config)
+        training_start = perf_counter()
         search.fit(X_train, y_train_encoded)
+        training_duration_seconds = perf_counter() - training_start
         best_pipeline = search.best_estimator_
         best_params = {
             key: str(value) if value is None else value
@@ -164,12 +193,12 @@ def train_and_log(
 
         mlflow.log_params({f"best_{k}": v for k, v in best_params.items()})
         mlflow.log_metric("cv_best_f1_macro", search.best_score_)
+        mlflow.log_metric("training_duration_seconds", training_duration_seconds)
         logger.info(f"Best params for '{run_name}': {search.best_params_}")
 
         model_path = model_dir / "model.joblib"
         model_dir.mkdir(parents=True, exist_ok=True)
         joblib.dump(best_pipeline, model_path)
-        mlflow.log_artifact(str(model_path))
         mlflow.log_artifact(str(label_encoder_path))
 
         # Log scikit-learn pipeline (preprocessor + model) as MLflow artifact
@@ -184,6 +213,7 @@ def train_and_log(
         run_id = mlflow.active_run().info.run_id
         logger.info(
             f"Run '{run_name}' complete | CV F1 macro: {search.best_score_:.4f} | "
+            f"Training duration: {training_duration_seconds:.1f}s | "
             f"Run ID: {run_id} | Model URI: {model_info.model_uri}"
         )
         return {
@@ -193,12 +223,19 @@ def train_and_log(
             "model_uri": model_info.model_uri,
             "best_params": search.best_params_,
             "cv_best_f1_macro": search.best_score_,
+            "training_duration_seconds": training_duration_seconds,
             "model_path": str(model_path),
         }
 
 
+def should_train(selected_model: str, model_key: str) -> bool:
+    """Return whether a candidate should be trained for this execution."""
+    return selected_model == "both" or selected_model == model_key
+
+
 def main() -> None:
     """Main training pipeline: loads data, fits both models, and logs to MLflow."""
+    args = parse_args()
     config = load_config()
 
     # Configure MLflow
@@ -218,75 +255,64 @@ def main() -> None:
     label_encoder = fit_label_encoder(y_train_raw)
     y_train_encoded = label_encoder.transform(y_train_raw)
 
+    results = []
+
     # -------------------------
     # Model 1: Logistic Regression
     # -------------------------
-    lr_cfg = config["models"]["logistic_regression"]
-    lr_classifier = LogisticRegression(
-        max_iter=lr_cfg["max_iter"],
-        C=lr_cfg["C"],
-        solver=lr_cfg["solver"],
-        random_state=lr_cfg["random_state"],
-        class_weight=lr_cfg["class_weight"],
-    )
-    lr_dir = MODELS_DIR / "logistic_regression"
-    lr_label_encoder_path = save_label_encoder(label_encoder, lr_dir)
+    if should_train(args.model, "lr"):
+        lr_cfg = config["models"]["logistic_regression"]
+        lr_classifier = LogisticRegression(**lr_cfg["fixed_params"])
+        lr_dir = MODELS_DIR / "logistic_regression"
+        lr_label_encoder_path = save_label_encoder(label_encoder, lr_dir)
 
-    lr_pipeline = build_pipeline(lr_classifier)
-    results = []
-    results.append(
-        train_and_log(
-            run_name="logistic_regression_baseline",
-            pipeline=lr_pipeline,
-            X_train=X_train,
-            y_train_encoded=y_train_encoded,
-            params={
-                **lr_cfg,
-                "model_type": "logistic_regression",
-                "target": target_col,
-            },
-            param_grid=lr_cfg["param_grid"],
-            registered_model_name=config["registry"]["logistic_regression"],
-            config=config,
-            model_dir=lr_dir,
-            label_encoder_path=lr_label_encoder_path,
+        lr_pipeline = build_pipeline(lr_classifier)
+        results.append(
+            train_and_log(
+                run_name="logistic_regression_baseline",
+                pipeline=lr_pipeline,
+                X_train=X_train,
+                y_train_encoded=y_train_encoded,
+                params={
+                    **lr_cfg,
+                    "model_type": "logistic_regression",
+                    "target": target_col,
+                },
+                param_grid=lr_cfg["param_grid"],
+                registered_model_name=config["registry"]["logistic_regression"],
+                config=config,
+                model_dir=lr_dir,
+                label_encoder_path=lr_label_encoder_path,
+            )
         )
-    )
 
     # -------------------------
     # Model 2: Random Forest
     # -------------------------
-    rf_cfg = config["models"]["random_forest"]
-    rf_classifier = RandomForestClassifier(
-        n_estimators=rf_cfg["n_estimators"],
-        max_depth=rf_cfg["max_depth"],
-        min_samples_split=rf_cfg["min_samples_split"],
-        random_state=rf_cfg["random_state"],
-        class_weight=rf_cfg["class_weight"],
-        n_jobs=rf_cfg["n_jobs"],
-    )
-    rf_dir = MODELS_DIR / "random_forest"
-    rf_label_encoder_path = save_label_encoder(label_encoder, rf_dir)
+    if should_train(args.model, "rf"):
+        rf_cfg = config["models"]["random_forest"]
+        rf_classifier = RandomForestClassifier(**rf_cfg["fixed_params"])
+        rf_dir = MODELS_DIR / "random_forest"
+        rf_label_encoder_path = save_label_encoder(label_encoder, rf_dir)
 
-    rf_pipeline = build_pipeline(rf_classifier)
-    results.append(
-        train_and_log(
-            run_name="random_forest_baseline",
-            pipeline=rf_pipeline,
-            X_train=X_train,
-            y_train_encoded=y_train_encoded,
-            params={**rf_cfg, "model_type": "random_forest", "target": target_col},
-            param_grid=rf_cfg["param_grid"],
-            registered_model_name=config["registry"]["random_forest"],
-            config=config,
-            model_dir=rf_dir,
-            label_encoder_path=rf_label_encoder_path,
+        rf_pipeline = build_pipeline(rf_classifier)
+        results.append(
+            train_and_log(
+                run_name="random_forest_baseline",
+                pipeline=rf_pipeline,
+                X_train=X_train,
+                y_train_encoded=y_train_encoded,
+                params={**rf_cfg, "model_type": "random_forest", "target": target_col},
+                param_grid=rf_cfg["param_grid"],
+                registered_model_name=config["registry"]["random_forest"],
+                config=config,
+                model_dir=rf_dir,
+                label_encoder_path=rf_label_encoder_path,
+            )
         )
-    )
 
     cv_summary = ", ".join(
-        f"{result['run_name']}={result['cv_best_f1_macro']:.4f}"
-        for result in results
+        f"{result['run_name']}={result['cv_best_f1_macro']:.4f}" for result in results
     )
     logger.info(f"Training complete. CV summary: {cv_summary}")
     logger.info("Run evaluate_model.py to compute final test metrics.")

@@ -11,7 +11,7 @@ data:
 training:
   random_state: 42
   target_col: "job_category"
-  cv_folds: 3
+  cv_folds: 5
   scoring: "f1_macro"
 
 # MLflow Model Registry names
@@ -22,24 +22,19 @@ registry:
 # Model configuration and hyperparameters
 models:
   logistic_regression:
-    max_iter: 5000
-    solver: "lbfgs"
-    C: 1.0
-    random_state: 42
-    class_weight: "balanced"
+    fixed_params:
+      max_iter: 5000
+      solver: "lbfgs"
+      random_state: 42
+      class_weight: "balanced"
     param_grid:
-      classifier__C: [0.1, 1.0, 10.0]
-      classifier__solver: ["lbfgs"]
-      classifier__max_iter: [5000]
+      classifier__C: [0.1, 1.0, 3.0, 10.0]
 
   random_forest:
-    n_estimators: 100
-    max_depth: 20
-    min_samples_split: 5
-    random_state: 42
-    class_weight: "balanced"
-    n_jobs: -1
+    fixed_params:
+      random_state: 42
+      class_weight: "balanced"
     param_grid:
       classifier__n_estimators: [100, 200]
-      classifier__max_depth: [20, null]
-      classifier__min_samples_split: [5]
+      classifier__max_depth: [20, 40, null]
+      classifier__min_samples_split: [2, 5]
