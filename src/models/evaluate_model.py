@@ -16,12 +16,14 @@ import logging
 import re
 import sys
 from pathlib import Path
+from time import perf_counter
 
 import joblib
 import mlflow
 import mlflow.sklearn
 import pandas as pd
 import yaml
+from mlflow.exceptions import MlflowException
 from sklearn.metrics import (
     accuracy_score,
     classification_report,
@@ -44,7 +46,7 @@ logger = logging.getLogger(__name__)
 
 CONFIG_PATH = PROJECT_DIR / "src" / "config" / "mlflow_config.yml"
 MODELS_DIR = PROJECT_DIR / "models"
-COMPARISON_REPORT_PATH = MODELS_DIR / "model_comparison.md"
+
 
 MODEL_TYPES = {
     "lr": "logistic_regression",
@@ -56,6 +58,22 @@ def load_config() -> dict:
     """Load project MLflow/model configuration."""
     with open(CONFIG_PATH, "r") as f:
         return yaml.safe_load(f)
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse CLI options."""
+    parser = argparse.ArgumentParser(description="Evaluate trained MLflow models.")
+    parser.add_argument("--run-id", type=str, default=None, help="MLflow run ID.")
+    parser.add_argument(
+        "--model",
+        choices=["lr", "rf", "both"],
+        default="both",
+        help="Model to evaluate.",
+    )
+    args = parser.parse_args()
+    if args.model == "both" and args.run_id:
+        raise ValueError("--run-id can only be used when evaluating a single model.")
+    return args
 
 
 def load_test_data(config: dict) -> tuple[pd.DataFrame, pd.Series]:
@@ -101,12 +119,35 @@ def load_logged_model(run_id: str | None, config: dict, model_type: str):
     return mlflow.sklearn.load_model(model_uri), logged_model.source_run_id, model_uri
 
 
-def load_label_encoder(model_type: str):
-    """Load the LabelEncoder persisted during training."""
+def load_label_encoder_from_mlflow(run_id: str):
+    """Load the LabelEncoder artifact from the source MLflow run."""
+    artifact_path = mlflow.artifacts.download_artifacts(
+        run_id=run_id,
+        artifact_path="label_encoder.pkl",
+    )
+    logger.info(f"Loading LabelEncoder from MLflow artifact: {artifact_path}")
+    return joblib.load(artifact_path)
+
+
+def load_label_encoder_from_local(model_type: str):
+    """Load the LabelEncoder persisted locally during training."""
     path = MODELS_DIR / model_type / "label_encoder.pkl"
     if not path.exists():
         raise FileNotFoundError(f"LabelEncoder not found at {path}.")
+    logger.info(f"Loading LabelEncoder from local path: {path}")
     return joblib.load(path)
+
+
+def load_label_encoder(model_type: str, run_id: str):
+    """Load the LabelEncoder from MLflow, falling back to the local copy."""
+    try:
+        return load_label_encoder_from_mlflow(run_id)
+    except MlflowException as exc:
+        logger.warning(
+            "Could not load LabelEncoder from MLflow artifacts; "
+            f"falling back to local copy. Reason: {exc}"
+        )
+        return load_label_encoder_from_local(model_type)
 
 
 def safe_metric_suffix(label: str) -> str:
@@ -183,7 +224,9 @@ def write_artifacts(model_type: str, y_true, y_pred, labels) -> dict[str, Path]:
     return paths
 
 
-def log_evaluation(run_id: str, model_uri: str, config: dict, metrics, artifacts) -> None:
+def log_evaluation(
+    run_id: str, model_uri: str, config: dict, metrics, artifacts
+) -> None:
     """Log final test metrics and artifacts to the source MLflow run."""
     with mlflow.start_run(run_id=run_id):
         mlflow.set_tags(
@@ -204,30 +247,25 @@ def evaluate_candidate(
     config: dict,
     X_test: pd.DataFrame,
     y_test: pd.Series,
-) -> dict:
-    """Evaluate one candidate model and return its comparison payload."""
+) -> None:
+    """Evaluate one candidate model and log final metrics/artifacts."""
     model_type = MODEL_TYPES[model_key]
     title = model_type.replace("_", " ").title()
 
     model, source_run_id, model_uri = load_logged_model(run_id, config, model_type)
-    label_encoder = load_label_encoder(model_type)
+    label_encoder = load_label_encoder(model_type, source_run_id)
 
+    evaluation_start = perf_counter()
     y_pred = label_encoder.inverse_transform(model.predict(X_test))
     y_true = y_test.values
     labels = label_encoder.classes_
 
     metrics = compute_metrics(y_true, y_pred, labels)
     artifacts = write_artifacts(model_type, y_true, y_pred, labels)
+    metrics["evaluation_duration_seconds"] = perf_counter() - evaluation_start
     log_evaluation(source_run_id, model_uri, config, metrics, artifacts)
 
     print_summary(title, source_run_id, metrics, artifacts)
-    return {
-        "model_key": model_key,
-        "run_name": f"{model_type}_baseline",
-        "source_run_id": source_run_id,
-        "registered_model_name": config["registry"][model_type],
-        "metrics": metrics,
-    }
 
 
 def print_summary(title: str, run_id: str, metrics: dict, artifacts: dict) -> None:
@@ -250,97 +288,16 @@ def print_summary(title: str, run_id: str, metrics: dict, artifacts: dict) -> No
     print(f"  Test F1 Weighted: {metrics['f1_weighted']:.4f}")
 
 
-def write_model_comparison(results: list[dict]) -> None:
-    """Write final test comparison report for the TFG memory/defense."""
-    if len(results) < 2:
-        return
-
-    ranked = sorted(results, key=lambda item: item["metrics"]["f1_macro"], reverse=True)
-    selected = ranked[0]
-    lr_result = next(result for result in results if result["model_key"] == "lr")
-    rf_result = next(result for result in results if result["model_key"] == "rf")
-
-    if (
-        selected is rf_result
-        and selected["metrics"]["f1_macro"] - lr_result["metrics"]["f1_macro"] < 0.03
-    ):
-        selected = lr_result
-        rationale = (
-            "Logistic Regression is selected because its final test F1 macro is "
-            "within 0.03 of Random Forest while keeping better interpretability."
-        )
-    else:
-        rationale = (
-            f"{selected['run_name']} is selected because it has the highest final "
-            "test F1 macro among the compared baselines."
-        )
-
-    lines = [
-        "# Model Comparison",
-        "",
-        "Comparison target: multiclass classification of `job_category`.",
-        "Evaluation split: held-out `test.csv`.",
-        "",
-        "| Model | Test F1 macro | Test precision macro | Test recall macro | Test accuracy | Registry name | Run ID |",
-        "| --- | ---: | ---: | ---: | ---: | --- | --- |",
-    ]
-    for result in results:
-        metrics = result["metrics"]
-        lines.append(
-            f"| {result['run_name']} | {metrics['f1_macro']:.4f} | "
-            f"{metrics['precision_macro']:.4f} | {metrics['recall_macro']:.4f} | "
-            f"{metrics['accuracy']:.4f} | `{result['registered_model_name']}` | "
-            f"`{result['source_run_id']}` |"
-        )
-
-    lines.extend(
-        [
-            "",
-            "## Selection Rationale",
-            "",
-            rationale,
-            "",
-            "Interpretability trade-off: Logistic Regression provides a more "
-            "interpretable linear baseline over TF-IDF features. Random Forest remains "
-            "more opaque, but its extra complexity is justified here by the final test "
-            "metric improvement.",
-            "",
-            f"Selected model: `{selected['run_name']}`.",
-        ]
-    )
-    COMPARISON_REPORT_PATH.write_text("\n".join(lines) + "\n")
-    logger.info(f"Model comparison report written to {COMPARISON_REPORT_PATH}")
-
-
-def parse_args() -> argparse.Namespace:
-    """Parse CLI options."""
-    parser = argparse.ArgumentParser(description="Evaluate trained MLflow models.")
-    parser.add_argument("--run-id", type=str, default=None, help="MLflow run ID.")
-    parser.add_argument(
-        "--model",
-        choices=["lr", "rf", "both"],
-        default="both",
-        help="Model to evaluate.",
-    )
-    args = parser.parse_args()
-    if args.model == "both" and args.run_id:
-        raise ValueError("--run-id can only be used when evaluating a single model.")
-    return args
-
-
 def main() -> None:
-    """Load test data, evaluate selected candidates, and write comparison."""
+    """Load test data and evaluate selected model candidates."""
     args = parse_args()
     config = load_config()
     mlflow.set_tracking_uri(config["tracking_uri"])
 
     X_test, y_test = load_test_data(config)
     model_keys = ["lr", "rf"] if args.model == "both" else [args.model]
-    results = [
+    for model_key in model_keys:
         evaluate_candidate(model_key, args.run_id, config, X_test, y_test)
-        for model_key in model_keys
-    ]
-    write_model_comparison(results)
 
 
 if __name__ == "__main__":
