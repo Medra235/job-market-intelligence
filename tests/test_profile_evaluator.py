@@ -89,11 +89,11 @@ def test_build_profile_evaluation_prompt_includes_profile_target_and_context() -
     assert "Data Engineer" in prompt
     assert "Ofertas recuperadas como referencia de mercado" in prompt
     assert "Usa exactamente esta" in prompt
-    assert "- **resumen del encaje**:" in prompt
-    assert "- **skills detectadas en el perfil**:" in prompt
-    assert "fundamentos de entrada ya cubiertos" in prompt
-    assert "siguientes pasos prácticos" in prompt
-    assert "gaps avanzados o aspiracionales" in prompt
+    assert "- **Resumen del encaje**:" in prompt
+    assert "- **Skills detectadas en el perfil**:" in prompt
+    assert "Fundamentos de entrada ya cubiertos" in prompt
+    assert "Siguientes pasos prácticos" in prompt
+    assert "Gaps avanzados o aspiracionales" in prompt
     assert "Agrupa las skills explícitas por tipo" in prompt
     assert '"AWS Core", "Herramientas de IaC"' in prompt
     assert "Agrupa gaps relacionados" in prompt
