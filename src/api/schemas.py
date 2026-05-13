@@ -3,12 +3,6 @@
 from pydantic import BaseModel
 
 
-class HealthResponse(BaseModel):
-    """Liveness response for the API."""
-
-    status: str
-
-
 class MarketSummaryResponse(BaseModel):
     """High-level processed market dataset metrics."""
 

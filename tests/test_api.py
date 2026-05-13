@@ -2,15 +2,13 @@
 
 import asyncio
 
-from src.api.main import (
-    app,
-    health_check,
+from src.api.main import app
+from src.api.routers.market import (
     market_categories,
     market_salary_by_category,
     market_summary,
     market_work_types,
 )
-from src.api.schemas import HealthResponse
 
 
 class FakeMarketAnalytics:
@@ -61,13 +59,6 @@ class FakeMarketAnalytics:
 def override_market_analytics() -> FakeMarketAnalytics:
     """Provide fake analytics in API tests."""
     return FakeMarketAnalytics()
-
-
-def test_health_check_returns_ok() -> None:
-    """The health endpoint should expose a simple liveness contract."""
-    response = asyncio.run(health_check())
-
-    assert response == HealthResponse(status="ok")
 
 
 def test_market_summary_returns_analytics_payload() -> None:
@@ -123,7 +114,6 @@ def test_app_registers_initial_api_routes() -> None:
     route_paths = {route.path for route in app.routes}
 
     assert {
-        "/health",
         "/market/summary",
         "/market/categories",
         "/market/work-types",
