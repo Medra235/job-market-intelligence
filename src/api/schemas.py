@@ -1,6 +1,6 @@
 """Pydantic response schemas for the FastAPI application."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 
 class MarketSummaryResponse(BaseModel):
@@ -38,3 +38,46 @@ class SalaryByCategoryItem(BaseModel):
     average_max_salary: float
     median_max_salary: float
     pay_period: str
+
+
+class ProfileEvaluationRequest(BaseModel):
+    """Input payload for evaluating a user profile."""
+
+    profile_text: str = Field(..., min_length=1)
+    top_k: int = Field(default=5, ge=1, le=10)
+
+    @field_validator("profile_text")
+    @classmethod
+    def strip_and_validate_profile_text(cls, value: str) -> str:
+        """Reject empty profile text after trimming whitespace."""
+        stripped_value = value.strip()
+        if not stripped_value:
+            raise ValueError("Profile text cannot be empty.")
+        return stripped_value
+
+
+class CategoryPredictionResponse(BaseModel):
+    """Classical classifier signal exposed by the profile evaluator."""
+
+    label: str
+    confidence: float | None
+    certainty: str
+    model_type: str
+
+
+class ProfileSourceItem(BaseModel):
+    """Retrieved job-posting source used as profile evaluation evidence."""
+
+    job_id: int | None
+    title: str
+    job_category: str
+    score: float
+
+
+class ProfileEvaluationApiResponse(BaseModel):
+    """Structured response returned by the profile evaluator endpoint."""
+
+    profile_text: str
+    category_prediction: CategoryPredictionResponse
+    evaluation: str
+    sources: list[ProfileSourceItem]

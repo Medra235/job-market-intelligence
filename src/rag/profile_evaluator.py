@@ -86,7 +86,9 @@ class ProfileEvaluator:
             else None
         )
         retrieval_query = (
-            f"{retrieval_signal}\n\n{profile_text}" if retrieval_signal else profile_text
+            f"{retrieval_signal}\n\n{profile_text}"
+            if retrieval_signal
+            else profile_text
         )
         documents = self.retriever.retrieve(
             query=retrieval_query,
@@ -114,7 +116,9 @@ class ProfileEvaluator:
         return ProfileEvaluationResponse(
             evaluation=evaluation,
             profile_text=profile_text,
-            target_role=target_role.strip() if target_role and target_role.strip() else None,
+            target_role=target_role.strip()
+            if target_role and target_role.strip()
+            else None,
             category_prediction=category_prediction,
             documents=documents,
             prompt=prompt,
