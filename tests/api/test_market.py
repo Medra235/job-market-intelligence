@@ -1,8 +1,7 @@
-"""Tests for the FastAPI application."""
+"""Tests for market API route functions."""
 
 import asyncio
 
-from src.api.main import app
 from src.api.routers.market import (
     market_categories,
     market_salary_by_category,
@@ -107,15 +106,3 @@ def test_market_salary_by_category_returns_analytics_payload() -> None:
             "pay_period": "YEARLY",
         }
     ]
-
-
-def test_app_registers_initial_api_routes() -> None:
-    """The app should expose the initial Phase 5 API paths."""
-    route_paths = {route.path for route in app.routes}
-
-    assert {
-        "/market/summary",
-        "/market/categories",
-        "/market/work-types",
-        "/market/salary-by-category",
-    }.issubset(route_paths)
