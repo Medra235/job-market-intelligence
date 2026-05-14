@@ -11,14 +11,16 @@ import logging
 import sys
 from pathlib import Path
 
-import pandas as pd
-from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, PointStruct, VectorParams
-from sentence_transformers import SentenceTransformer
-
 PROJECT_DIR = Path(__file__).resolve().parents[2]
 if str(PROJECT_DIR) not in sys.path:
     sys.path.insert(0, str(PROJECT_DIR))
+
+import pandas as pd  # noqa: E402
+from qdrant_client import QdrantClient  # noqa: E402
+from qdrant_client.models import Distance, PointStruct, VectorParams  # noqa: E402
+from sentence_transformers import SentenceTransformer  # noqa: E402
+
+from src.config.settings import settings  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -27,9 +29,6 @@ logger = logging.getLogger(__name__)
 
 TRAIN_PATH = PROJECT_DIR / "data" / "processed" / "train.csv"
 TEST_PATH = PROJECT_DIR / "data" / "processed" / "test.csv"
-DEFAULT_COLLECTION = "job_postings"
-DEFAULT_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-DEFAULT_QDRANT_URL = "http://localhost:6333"
 DEFAULT_BATCH_SIZE = 64
 DEFAULT_LIMIT = 20
 DESCRIPTION_PREVIEW_CHARS = 300
@@ -40,17 +39,17 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--collection",
-        default=DEFAULT_COLLECTION,
+        default=settings.qdrant_collection,
         help="Qdrant collection name to create or reuse.",
     )
     parser.add_argument(
         "--model-name",
-        default=DEFAULT_MODEL,
+        default=settings.embedding_model,
         help="Sentence-transformers embedding model name.",
     )
     parser.add_argument(
         "--qdrant-url",
-        default=DEFAULT_QDRANT_URL,
+        default=settings.qdrant_url,
         help="Qdrant base URL.",
     )
     parser.add_argument(

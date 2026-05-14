@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.messages import BaseMessage
 
-DEFAULT_MAX_HISTORY_MESSAGES = 8
+from src.config.settings import settings
 
 
 @dataclass
@@ -15,7 +15,7 @@ class ConversationMemory:
     history: InMemoryChatMessageHistory = field(
         default_factory=InMemoryChatMessageHistory
     )
-    max_messages: int = DEFAULT_MAX_HISTORY_MESSAGES
+    max_messages: int = settings.max_history_messages
 
     @property
     def messages(self) -> list[BaseMessage]:

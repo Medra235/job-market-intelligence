@@ -4,12 +4,10 @@ from collections.abc import Sequence
 
 from langchain_core.messages import BaseMessage
 
+from src.config.settings import settings
 from src.models.profile_classifier import CategoryPrediction
 from src.rag.retriever import RetrievedDocument
 
-DEFAULT_MAX_CONTEXT_DOCUMENTS = 5
-DEFAULT_MAX_HISTORY_MESSAGES = 8
-DEFAULT_MAX_PREVIEW_CHARS = 700
 HIGH_CLASSIFIER_CONFIDENCE = 0.70
 MEDIUM_CLASSIFIER_CONFIDENCE = 0.50
 
@@ -131,7 +129,7 @@ def estimate_classifier_certainty(confidence: float | None) -> str:
 
 def format_conversation_history(
     messages: Sequence[BaseMessage],
-    max_messages: int = DEFAULT_MAX_HISTORY_MESSAGES,
+    max_messages: int = settings.max_history_messages,
 ) -> str:
     """Format recent chat messages as compact conversational context."""
     if max_messages <= 0:
@@ -160,8 +158,8 @@ def format_conversation_history(
 
 def format_retrieved_documents(
     documents: Sequence[RetrievedDocument],
-    max_documents: int = DEFAULT_MAX_CONTEXT_DOCUMENTS,
-    max_preview_chars: int = DEFAULT_MAX_PREVIEW_CHARS,
+    max_documents: int = settings.max_context_documents,
+    max_preview_chars: int = settings.max_preview_chars,
 ) -> str:
     """Format retrieved documents as compact context for the LLM."""
     if not documents:
@@ -197,8 +195,8 @@ def build_profile_evaluation_prompt(
     target_role: str | None = None,
     category_prediction: CategoryPrediction | None = None,
     classifier_certainty: str | None = None,
-    max_documents: int = DEFAULT_MAX_CONTEXT_DOCUMENTS,
-    max_preview_chars: int = DEFAULT_MAX_PREVIEW_CHARS,
+    max_documents: int = settings.max_context_documents,
+    max_preview_chars: int = settings.max_preview_chars,
 ) -> str:
     """Build a grounded prompt for evaluating a user's profile against the market."""
     profile_text = profile_text.strip()
@@ -269,9 +267,9 @@ def build_rag_prompt(
     query: str,
     documents: Sequence[RetrievedDocument],
     conversation_history: Sequence[BaseMessage] | None = None,
-    max_documents: int = DEFAULT_MAX_CONTEXT_DOCUMENTS,
-    max_history_messages: int = DEFAULT_MAX_HISTORY_MESSAGES,
-    max_preview_chars: int = DEFAULT_MAX_PREVIEW_CHARS,
+    max_documents: int = settings.max_context_documents,
+    max_history_messages: int = settings.max_history_messages,
+    max_preview_chars: int = settings.max_preview_chars,
 ) -> str:
     """Build the user prompt that combines retrieved context and the query."""
     query = query.strip()

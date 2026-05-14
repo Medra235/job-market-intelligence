@@ -5,9 +5,7 @@ from typing import Any
 
 import httpx
 
-DEFAULT_OLLAMA_URL = "http://localhost:11434"
-DEFAULT_OLLAMA_MODEL = "qwen3.5:9b"
-DEFAULT_TIMEOUT_SECONDS = 120.0
+from src.config.settings import settings
 
 
 @dataclass(frozen=True)
@@ -35,9 +33,9 @@ class OllamaGenerator:
 
     def __init__(
         self,
-        model_name: str = DEFAULT_OLLAMA_MODEL,
-        base_url: str = DEFAULT_OLLAMA_URL,
-        timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+        model_name: str = settings.ollama_model,
+        base_url: str = settings.ollama_url,
+        timeout_seconds: float = settings.ollama_timeout_seconds,
         client: httpx.Client | None = None,
     ) -> None:
         self.model_name = model_name
@@ -95,8 +93,8 @@ class OllamaGenerator:
 def generate_answer(
     prompt: str,
     system_prompt: str | None = None,
-    model_name: str = DEFAULT_OLLAMA_MODEL,
-    base_url: str = DEFAULT_OLLAMA_URL,
+    model_name: str = settings.ollama_model,
+    base_url: str = settings.ollama_url,
     config: GenerationConfig | None = None,
 ) -> str:
     """Convenience function for one-off Ollama generation calls."""

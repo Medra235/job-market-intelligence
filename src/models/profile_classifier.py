@@ -6,11 +6,11 @@ from pathlib import Path
 import joblib
 import pandas as pd
 
+from src.config.settings import settings
 from src.features.build_features import prepare_features
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
 MODELS_DIR = PROJECT_DIR / "models"
-DEFAULT_MODEL_TYPE = "random_forest"
 
 
 @dataclass(frozen=True)
@@ -46,7 +46,7 @@ class JobCategoryClassifier:
 
     def __init__(
         self,
-        model_type: str = DEFAULT_MODEL_TYPE,
+        model_type: str = settings.classifier_model_type,
         model_path: Path | None = None,
         label_encoder_path: Path | None = None,
     ) -> None:

@@ -13,17 +13,8 @@ PROJECT_DIR = Path(__file__).resolve().parents[2]
 if str(PROJECT_DIR) not in sys.path:
     sys.path.insert(0, str(PROJECT_DIR))
 
-from src.rag.generator import (  # noqa: E402
-    DEFAULT_OLLAMA_MODEL,
-    DEFAULT_OLLAMA_URL,
-    GenerationConfig,
-    OllamaGenerator,
-)
-from src.rag.index_corpus import (  # noqa: E402
-    DEFAULT_COLLECTION,
-    DEFAULT_MODEL,
-    DEFAULT_QDRANT_URL,
-)
+from src.config.settings import settings  # noqa: E402
+from src.rag.generator import GenerationConfig, OllamaGenerator  # noqa: E402
 from src.rag.rag_chain import JobMarketRagChain  # noqa: E402
 from src.rag.retriever import QdrantRetriever  # noqa: E402
 
@@ -46,27 +37,27 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--top-k", type=int, default=5, help="Retriever top_k.")
     parser.add_argument(
         "--collection",
-        default=DEFAULT_COLLECTION,
+        default=settings.qdrant_collection,
         help="Qdrant collection name.",
     )
     parser.add_argument(
         "--embedding-model",
-        default=DEFAULT_MODEL,
+        default=settings.embedding_model,
         help="Sentence-transformers embedding model name.",
     )
     parser.add_argument(
         "--llm-model",
-        default=DEFAULT_OLLAMA_MODEL,
+        default=settings.ollama_model,
         help="Ollama model name.",
     )
     parser.add_argument(
         "--qdrant-url",
-        default=DEFAULT_QDRANT_URL,
+        default=settings.qdrant_url,
         help="Qdrant base URL.",
     )
     parser.add_argument(
         "--ollama-url",
-        default=DEFAULT_OLLAMA_URL,
+        default=settings.ollama_url,
         help="Ollama base URL.",
     )
     parser.add_argument(

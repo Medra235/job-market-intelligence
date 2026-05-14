@@ -6,10 +6,8 @@ from typing import Any
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
+from src.config.settings import settings
 from src.rag.index_corpus import (
-    DEFAULT_COLLECTION,
-    DEFAULT_MODEL,
-    DEFAULT_QDRANT_URL,
     get_embedding_model,
     get_qdrant_client,
 )
@@ -47,9 +45,9 @@ class QdrantRetriever:
 
     def __init__(
         self,
-        collection_name: str = DEFAULT_COLLECTION,
-        model_name: str = DEFAULT_MODEL,
-        qdrant_url: str = DEFAULT_QDRANT_URL,
+        collection_name: str = settings.qdrant_collection,
+        model_name: str = settings.embedding_model,
+        qdrant_url: str = settings.qdrant_url,
         local_files_only: bool = False,
         client: QdrantClient | None = None,
         model: SentenceTransformer | None = None,
@@ -90,9 +88,9 @@ class QdrantRetriever:
 def retrieve(
     query: str,
     top_k: int = 5,
-    collection_name: str = DEFAULT_COLLECTION,
-    model_name: str = DEFAULT_MODEL,
-    qdrant_url: str = DEFAULT_QDRANT_URL,
+    collection_name: str = settings.qdrant_collection,
+    model_name: str = settings.embedding_model,
+    qdrant_url: str = settings.qdrant_url,
     local_files_only: bool = False,
     score_threshold: float | None = None,
 ) -> list[RetrievedDocument]:

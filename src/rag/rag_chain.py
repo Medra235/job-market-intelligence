@@ -2,11 +2,10 @@
 
 from dataclasses import dataclass
 
+from src.config.settings import settings
 from src.rag.generator import GenerationConfig, OllamaGenerator
 from src.rag.prompts import (
     CHATBOT_SYSTEM_PROMPT,
-    DEFAULT_MAX_CONTEXT_DOCUMENTS,
-    DEFAULT_MAX_PREVIEW_CHARS,
     build_rag_prompt,
 )
 from src.rag.memory import ConversationMemory
@@ -33,8 +32,8 @@ class JobMarketRagChain:
         generation_config: GenerationConfig | None = None,
         memory: ConversationMemory | None = None,
         system_prompt: str = CHATBOT_SYSTEM_PROMPT,
-        max_context_documents: int = DEFAULT_MAX_CONTEXT_DOCUMENTS,
-        max_preview_chars: int = DEFAULT_MAX_PREVIEW_CHARS,
+        max_context_documents: int = settings.max_context_documents,
+        max_preview_chars: int = settings.max_preview_chars,
     ) -> None:
         self.retriever = retriever or QdrantRetriever()
         self.generator = generator or OllamaGenerator()
@@ -47,7 +46,7 @@ class JobMarketRagChain:
     def answer(
         self,
         query: str,
-        top_k: int = DEFAULT_MAX_CONTEXT_DOCUMENTS,
+        top_k: int = settings.max_context_documents,
         score_threshold: float | None = None,
     ) -> RagResponse:
         """Answer one user query using retrieved job-posting context."""

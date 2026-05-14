@@ -13,9 +13,8 @@ PROJECT_DIR = Path(__file__).resolve().parents[2]
 if str(PROJECT_DIR) not in sys.path:
     sys.path.insert(0, str(PROJECT_DIR))
 
+from src.config.settings import settings  # noqa: E402
 from src.rag.generator import (  # noqa: E402
-    DEFAULT_OLLAMA_MODEL,
-    DEFAULT_OLLAMA_URL,
     GenerationConfig,
     generate_answer,
 )
@@ -36,12 +35,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--model-name",
-        default=DEFAULT_OLLAMA_MODEL,
+        default=settings.ollama_model,
         help="Ollama model name to use.",
     )
     parser.add_argument(
         "--ollama-url",
-        default=DEFAULT_OLLAMA_URL,
+        default=settings.ollama_url,
         help="Ollama base URL.",
     )
     parser.add_argument(

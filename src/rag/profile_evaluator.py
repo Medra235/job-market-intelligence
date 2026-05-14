@@ -2,11 +2,10 @@
 
 from dataclasses import dataclass
 
+from src.config.settings import settings
 from src.models.profile_classifier import CategoryPrediction, JobCategoryClassifier
 from src.rag.generator import GenerationConfig, OllamaGenerator
 from src.rag.prompts import (
-    DEFAULT_MAX_CONTEXT_DOCUMENTS,
-    DEFAULT_MAX_PREVIEW_CHARS,
     PROFILE_EVALUATION_SYSTEM_PROMPT,
     build_profile_evaluation_prompt,
     estimate_classifier_certainty,
@@ -41,8 +40,8 @@ class ProfileEvaluator:
         category_classifier: JobCategoryClassifier | None = None,
         generation_config: GenerationConfig | None = None,
         system_prompt: str = PROFILE_EVALUATION_SYSTEM_PROMPT,
-        max_context_documents: int = DEFAULT_MAX_CONTEXT_DOCUMENTS,
-        max_preview_chars: int = DEFAULT_MAX_PREVIEW_CHARS,
+        max_context_documents: int = settings.max_context_documents,
+        max_preview_chars: int = settings.max_preview_chars,
     ) -> None:
         self.retriever = retriever or QdrantRetriever()
         self.generator = generator or OllamaGenerator()
@@ -56,7 +55,7 @@ class ProfileEvaluator:
         self,
         profile_text: str,
         target_role: str | None = None,
-        top_k: int = DEFAULT_MAX_CONTEXT_DOCUMENTS,
+        top_k: int = settings.max_context_documents,
         score_threshold: float | None = None,
         include_category_prediction: bool = True,
     ) -> ProfileEvaluationResponse:
