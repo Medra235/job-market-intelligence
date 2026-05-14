@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from src.api.schemas import (
     CategoryPredictionResponse,
@@ -10,7 +10,8 @@ from src.api.schemas import (
     ProfileEvaluationRequest,
     ProfileSourceItem,
 )
-from src.models.profile_classifier import JobCategoryClassifier
+from src.api.services import build_profile_evaluator
+from src.config.settings import Settings
 from src.rag.profile_evaluator import (
     ProfileEvaluationResponse as DomainProfileEvaluationResponse,
 )
@@ -25,24 +26,62 @@ router = APIRouter(
 )
 
 
-async def get_profile_evaluator() -> ProfileEvaluator:
-    """Provide the profile evaluator used by profile endpoints."""
-    return ProfileEvaluator(category_classifier=JobCategoryClassifier())
+async def get_profile_evaluator(request: Request) -> ProfileEvaluator:
+    """Provide a shared profile evaluator, creating it on first use."""
+    evaluator = getattr(request.app.state, "profile_evaluator", None)
+    if evaluator is not None:
+        return evaluator
+
+    settings = await get_settings(request)
+    try:
+        evaluator = build_profile_evaluator(settings)
+    except Exception as error:
+        request.app.state.profile_evaluator = None
+        request.app.state.profile_evaluator_error = error
+        detail = (
+            "Profile evaluator is not available. "
+            "Check that Qdrant and Ollama are running and that local model "
+            "artifacts are available."
+        )
+        detail = f"{detail} Startup error: {error}"
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=detail,
+        ) from error
+
+    request.app.state.profile_evaluator = evaluator
+    request.app.state.profile_evaluator_error = None
+    return evaluator
 
 
 ProfileEvaluatorDep = Annotated[ProfileEvaluator, Depends(get_profile_evaluator)]
+
+
+async def get_settings(request: Request) -> Settings:
+    """Provide API settings loaded during app startup."""
+    settings = getattr(request.app.state, "settings", None)
+    if settings is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="API settings are not available.",
+        )
+    return settings
+
+
+SettingsDep = Annotated[Settings, Depends(get_settings)]
 
 
 @router.post("/evaluate", response_model=ProfileEvaluationApiResponse)
 async def evaluate_profile(
     request: ProfileEvaluationRequest,
     evaluator: ProfileEvaluatorDep,
+    settings: SettingsDep,
 ) -> ProfileEvaluationApiResponse:
     """Evaluate a profile using the classifier signal plus RAG market evidence."""
     try:
         response = evaluator.evaluate(
             profile_text=request.profile_text,
-            top_k=request.top_k,
+            top_k=request.top_k or settings.profile_top_k,
             include_category_prediction=True,
         )
     except ValueError as error:

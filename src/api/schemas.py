@@ -1,6 +1,6 @@
 """Pydantic response schemas for the FastAPI application."""
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class MarketSummaryResponse(BaseModel):
@@ -43,8 +43,26 @@ class SalaryByCategoryItem(BaseModel):
 class ProfileEvaluationRequest(BaseModel):
     """Input payload for evaluating a user profile."""
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "profile_text": (
+                    "I have experience building ETL pipelines with Python and SQL, "
+                    "using pandas for data transformation and Airflow for workflow "
+                    "orchestration."
+                ),
+                "top_k": 5,
+            }
+        }
+    )
+
     profile_text: str = Field(..., min_length=1)
-    top_k: int = Field(default=5, ge=1, le=10)
+    top_k: int | None = Field(
+        default=None,
+        ge=1,
+        le=10,
+        description="Optional retrieval size. If omitted, the API uses settings.profile_top_k.",
+    )
 
     @field_validator("profile_text")
     @classmethod
