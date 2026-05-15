@@ -1,7 +1,7 @@
 """Run a manual profile evaluation check.
 
 Usage example:
-    .venv/bin/python scripts/rag/check_profile_evaluator.py --profile "Python, SQL, pandas, basic AWS" --target-role "Data Engineer"
+    uv run python scripts/rag/check_profile_evaluator.py --profile "Python, SQL, pandas, basic AWS" --target-role "Data Engineer"
 """
 
 import argparse

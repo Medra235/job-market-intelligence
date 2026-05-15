@@ -1,8 +1,8 @@
 """Run a manual multi-turn RAG check.
 
 Usage example:
-    .venv/bin/python scripts/rag/check_rag_chain.py --query "What should I learn for Data Engineering?"
-    .venv/bin/python scripts/rag/check_rag_chain.py --query "What should I learn for Data Engineering?" --follow-up-query "And for ML Engineer?"
+    uv run python scripts/rag/check_rag_chain.py --query "What should I learn for Data Engineering?"
+    uv run python scripts/rag/check_rag_chain.py --query "What should I learn for Data Engineering?" --follow-up-query "And for ML Engineer?"
 """
 
 import argparse

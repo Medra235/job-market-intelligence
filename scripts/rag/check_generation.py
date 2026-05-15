@@ -1,8 +1,8 @@
 """Run a manual generation check against a local Ollama model.
 
 Usage examples:
-    .venv/bin/python scripts/rag/check_generation.py --prompt "Give me three Data Engineering skills."
-    .venv/bin/python scripts/rag/check_generation.py --prompt "Summarize MLOps in one paragraph." --num-predict 256
+    uv run python scripts/rag/check_generation.py --prompt "Give me three Data Engineering skills."
+    uv run python scripts/rag/check_generation.py --prompt "Summarize MLOps in one paragraph." --num-predict 256
 """
 
 import argparse

@@ -1,8 +1,8 @@
 """Run manual semantic-search checks against the Qdrant collection.
 
 Usage examples:
-    .venv/bin/python scripts/rag/check_retrieval.py --query "python sql airflow aws"
-    .venv/bin/python scripts/rag/check_retrieval.py --query "react frontend typescript" --top-k 3
+    uv run python scripts/rag/check_retrieval.py --query "python sql airflow aws"
+    uv run python scripts/rag/check_retrieval.py --query "react frontend typescript" --top-k 3
 """
 
 import argparse

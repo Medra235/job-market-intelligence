@@ -1,9 +1,9 @@
 """Index processed job postings into Qdrant using sentence-transformers.
 
 Usage examples:
-    .venv/bin/python src/rag/index_corpus.py
-    .venv/bin/python src/rag/index_corpus.py --limit 20 --recreate
-    .venv/bin/python src/rag/index_corpus.py --batch-size 128 --collection job_postings
+    uv run python src/rag/index_corpus.py
+    uv run python src/rag/index_corpus.py --limit 20 --recreate
+    uv run python src/rag/index_corpus.py --batch-size 128 --collection job_postings
 """
 
 import argparse
