@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from src.api.routers import market, profile
+from src.api.routers import chat, market, profile
 from src.config.settings import settings
 
 
@@ -14,9 +14,13 @@ async def lifespan(app: FastAPI):
     app.state.settings = settings
     app.state.profile_evaluator = None
     app.state.profile_evaluator_error = None
+    app.state.chat_rag_chain = None
+    app.state.chat_rag_chain_error = None
     yield
     app.state.profile_evaluator = None
     app.state.profile_evaluator_error = None
+    app.state.chat_rag_chain = None
+    app.state.chat_rag_chain_error = None
 
 
 app = FastAPI(
@@ -26,3 +30,4 @@ app = FastAPI(
 
 app.include_router(market.router)
 app.include_router(profile.router)
+app.include_router(chat.router)

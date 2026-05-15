@@ -1,5 +1,7 @@
 """Pydantic response schemas for the FastAPI application."""
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -99,3 +101,81 @@ class ProfileEvaluationApiResponse(BaseModel):
     category_prediction: CategoryPredictionResponse
     evaluation: str
     sources: list[ProfileSourceItem]
+
+
+class ChatHistoryMessage(BaseModel):
+    """One prior chat message sent by the client for stateless conversation."""
+
+    role: Literal["user", "assistant"]
+    content: str = Field(..., min_length=1)
+
+    @field_validator("content")
+    @classmethod
+    def strip_and_validate_content(cls, value: str) -> str:
+        """Reject empty chat history messages after trimming whitespace."""
+        stripped_value = value.strip()
+        if not stripped_value:
+            raise ValueError("Chat message content cannot be empty.")
+        return stripped_value
+
+
+class ChatRequest(BaseModel):
+    """Input payload for the RAG chatbot."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "message": "What skills should I prioritize for Data Engineering?",
+                "history": [
+                    {
+                        "role": "user",
+                        "content": "I know Python and SQL.",
+                    },
+                    {
+                        "role": "assistant",
+                        "content": "Python and SQL are a strong starting point.",
+                    },
+                ],
+                "top_k": 5,
+            }
+        }
+    )
+
+    message: str = Field(..., min_length=1)
+    history: list[ChatHistoryMessage] = Field(default_factory=list)
+    top_k: int | None = Field(
+        default=None,
+        ge=1,
+        le=10,
+        description=(
+            "Optional retrieval size. If omitted, the API uses "
+            "settings.max_context_documents."
+        ),
+    )
+
+    @field_validator("message")
+    @classmethod
+    def strip_and_validate_message(cls, value: str) -> str:
+        """Reject empty user messages after trimming whitespace."""
+        stripped_value = value.strip()
+        if not stripped_value:
+            raise ValueError("Message cannot be empty.")
+        return stripped_value
+
+
+class ChatSourceItem(BaseModel):
+    """Retrieved job-posting source used by the chatbot answer."""
+
+    job_id: int | None
+    title: str
+    job_category: str
+    score: float
+    description_preview: str
+
+
+class ChatResponse(BaseModel):
+    """Generated chatbot answer plus retrieved evidence."""
+
+    message: str
+    answer: str
+    sources: list[ChatSourceItem]
