@@ -2,14 +2,14 @@
 
 import pytest
 
-from src.models.profile_classifier import CategoryPrediction
-from src.rag.profile_evaluator import (
+from job_market_intelligence.models.profile_classifier import CategoryPrediction
+from job_market_intelligence.rag.profile_evaluator import (
     PROFILE_EVALUATION_SYSTEM_PROMPT,
     ProfileEvaluator,
     build_profile_evaluation_prompt,
     estimate_classifier_certainty,
 )
-from src.rag.retriever import RetrievedDocument
+from job_market_intelligence.rag.retriever import RetrievedDocument
 
 
 def sample_document() -> RetrievedDocument:

@@ -3,7 +3,7 @@
 import httpx
 import pytest
 
-from src.rag.generator import GenerationConfig, OllamaGenerator
+from job_market_intelligence.rag.generator import GenerationConfig, OllamaGenerator
 
 
 def test_generation_config_converts_to_ollama_options() -> None:

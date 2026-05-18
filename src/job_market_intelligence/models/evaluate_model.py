@@ -6,15 +6,14 @@ final test metrics, logs them back to the source run with a `test_` prefix, and
 writes local evaluation artifacts under `models/<model>/evaluation/`.
 
 Usage:
-    python src/models/evaluate_model.py --model both
-    python src/models/evaluate_model.py --model lr
-    python src/models/evaluate_model.py --model rf --run-id <RUN_ID>
+    uv run python -m job_market_intelligence.models.evaluate_model --model both
+    uv run python -m job_market_intelligence.models.evaluate_model --model lr
+    uv run python -m job_market_intelligence.models.evaluate_model --model rf --run-id <RUN_ID>
 """
 
 import argparse
 import logging
 import re
-import sys
 from pathlib import Path
 from time import perf_counter
 
@@ -33,18 +32,18 @@ from sklearn.metrics import (
     recall_score,
 )
 
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-if str(PROJECT_DIR) not in sys.path:
-    sys.path.insert(0, str(PROJECT_DIR))
+from job_market_intelligence.features.build_features import prepare_features
 
-from src.features.build_features import prepare_features  # noqa: E402
+PROJECT_DIR = Path(__file__).resolve().parents[3]
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
-CONFIG_PATH = PROJECT_DIR / "src" / "config" / "mlflow_config.yml"
+CONFIG_PATH = (
+    PROJECT_DIR / "src" / "job_market_intelligence" / "config" / "mlflow_config.yml"
+)
 MODELS_DIR = PROJECT_DIR / "models"
 
 

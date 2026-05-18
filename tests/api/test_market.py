@@ -2,7 +2,7 @@
 
 import asyncio
 
-from src.api.routers.market import (
+from job_market_intelligence.api.routers.market import (
     market_categories,
     market_salary_by_category,
     market_summary,

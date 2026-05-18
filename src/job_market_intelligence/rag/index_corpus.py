@@ -1,26 +1,23 @@
 """Index processed job postings into Qdrant using sentence-transformers.
 
 Usage examples:
-    uv run python src/rag/index_corpus.py
-    uv run python src/rag/index_corpus.py --limit 20 --recreate
-    uv run python src/rag/index_corpus.py --batch-size 128 --collection job_postings
+    uv run python -m job_market_intelligence.rag.index_corpus
+    uv run python -m job_market_intelligence.rag.index_corpus --limit 20 --recreate
+    uv run python -m job_market_intelligence.rag.index_corpus --batch-size 128 --collection job_postings
 """
 
 import argparse
 import logging
-import sys
 from pathlib import Path
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-if str(PROJECT_DIR) not in sys.path:
-    sys.path.insert(0, str(PROJECT_DIR))
 
 import pandas as pd  # noqa: E402
 from qdrant_client import QdrantClient  # noqa: E402
 from qdrant_client.models import Distance, PointStruct, VectorParams  # noqa: E402
 from sentence_transformers import SentenceTransformer  # noqa: E402
 
-from src.config.settings import settings  # noqa: E402
+from job_market_intelligence.config.settings import settings
+
+PROJECT_DIR = Path(__file__).resolve().parents[3]
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"

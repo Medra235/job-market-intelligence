@@ -4,9 +4,9 @@ from collections.abc import Sequence
 
 from langchain_core.messages import BaseMessage
 
-from src.config.settings import settings
-from src.models.profile_classifier import CategoryPrediction
-from src.rag.retriever import RetrievedDocument
+from job_market_intelligence.config.settings import settings
+from job_market_intelligence.models.profile_classifier import CategoryPrediction
+from job_market_intelligence.rag.retriever import RetrievedDocument
 
 HIGH_CLASSIFIER_CONFIDENCE = 0.70
 MEDIUM_CLASSIFIER_CONFIDENCE = 0.50

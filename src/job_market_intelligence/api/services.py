@@ -1,11 +1,11 @@
 """Factory helpers for FastAPI runtime services."""
 
-from src.config.settings import Settings
-from src.models.profile_classifier import JobCategoryClassifier
-from src.rag.generator import GenerationConfig, OllamaGenerator
-from src.rag.profile_evaluator import ProfileEvaluator
-from src.rag.rag_chain import JobMarketRagChain
-from src.rag.retriever import QdrantRetriever
+from job_market_intelligence.config.settings import Settings
+from job_market_intelligence.models.profile_classifier import JobCategoryClassifier
+from job_market_intelligence.rag.generator import GenerationConfig, OllamaGenerator
+from job_market_intelligence.rag.profile_evaluator import ProfileEvaluator
+from job_market_intelligence.rag.rag_chain import JobMarketRagChain
+from job_market_intelligence.rag.retriever import QdrantRetriever
 
 
 def build_profile_evaluator(settings: Settings) -> ProfileEvaluator:

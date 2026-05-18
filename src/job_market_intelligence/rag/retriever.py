@@ -6,8 +6,8 @@ from typing import Any
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
-from src.config.settings import settings
-from src.rag.index_corpus import (
+from job_market_intelligence.config.settings import settings
+from job_market_intelligence.rag.index_corpus import (
     get_embedding_model,
     get_qdrant_client,
 )

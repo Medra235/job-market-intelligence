@@ -6,13 +6,13 @@ import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
 
-from src.api.routers.profile import evaluate_profile
-from src.api.routers.profile import get_profile_evaluator
-from src.api.schemas import ProfileEvaluationRequest
-from src.config.settings import Settings
-from src.models.profile_classifier import CategoryPrediction
-from src.rag.profile_evaluator import ProfileEvaluationResponse as DomainProfileEvaluationResponse
-from src.rag.retriever import RetrievedDocument
+from job_market_intelligence.api.routers.profile import evaluate_profile
+from job_market_intelligence.api.routers.profile import get_profile_evaluator
+from job_market_intelligence.api.schemas import ProfileEvaluationRequest
+from job_market_intelligence.config.settings import Settings
+from job_market_intelligence.models.profile_classifier import CategoryPrediction
+from job_market_intelligence.rag.profile_evaluator import ProfileEvaluationResponse as DomainProfileEvaluationResponse
+from job_market_intelligence.rag.retriever import RetrievedDocument
 
 
 def sample_document() -> RetrievedDocument:
@@ -171,7 +171,10 @@ def test_get_profile_evaluator_builds_evaluator_lazily(monkeypatch) -> None:
         assert settings is request.app.state.settings
         return evaluator
 
-    monkeypatch.setattr("src.api.routers.profile.build_profile_evaluator", fake_builder)
+    monkeypatch.setattr(
+        "job_market_intelligence.api.routers.profile.build_profile_evaluator",
+        fake_builder,
+    )
 
     response = asyncio.run(get_profile_evaluator(request))
 
@@ -187,7 +190,10 @@ def test_get_profile_evaluator_maps_build_errors_to_503(monkeypatch) -> None:
     def fake_builder(settings: Settings) -> FakeProfileEvaluator:
         raise ConnectionError("Qdrant is unavailable.")
 
-    monkeypatch.setattr("src.api.routers.profile.build_profile_evaluator", fake_builder)
+    monkeypatch.setattr(
+        "job_market_intelligence.api.routers.profile.build_profile_evaluator",
+        fake_builder,
+    )
 
     with pytest.raises(HTTPException) as exc_info:
         asyncio.run(get_profile_evaluator(request))

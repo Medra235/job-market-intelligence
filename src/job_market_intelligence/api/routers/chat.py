@@ -4,16 +4,16 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
-from src.api.schemas import (
+from job_market_intelligence.api.schemas import (
     ChatHistoryMessage,
     ChatRequest,
     ChatResponse,
     ChatSourceItem,
 )
-from src.api.services import build_chat_rag_chain
-from src.config.settings import Settings
-from src.rag.memory import ConversationMemory
-from src.rag.rag_chain import JobMarketRagChain, RagResponse
+from job_market_intelligence.api.services import build_chat_rag_chain
+from job_market_intelligence.config.settings import Settings
+from job_market_intelligence.rag.memory import ConversationMemory
+from job_market_intelligence.rag.rag_chain import JobMarketRagChain, RagResponse
 
 router = APIRouter(
     prefix="/chat",

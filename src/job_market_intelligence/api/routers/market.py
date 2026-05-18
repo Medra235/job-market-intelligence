@@ -4,8 +4,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from src.analytics.queries import MarketAnalytics
-from src.api.schemas import (
+from job_market_intelligence.analytics.queries import MarketAnalytics
+from job_market_intelligence.api.schemas import (
     CategoryDistributionItem,
     MarketSummaryResponse,
     SalaryByCategoryItem,

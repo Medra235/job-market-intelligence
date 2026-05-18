@@ -12,14 +12,13 @@ Pipeline:
     - joblib serialization of the LabelEncoder for inference
 
 Usage:
-    python src/models/train_model.py --model both
-    python src/models/train_model.py --model lr
-    python src/models/train_model.py --model rf
+    uv run python -m job_market_intelligence.models.train_model --model both
+    uv run python -m job_market_intelligence.models.train_model --model lr
+    uv run python -m job_market_intelligence.models.train_model --model rf
 """
 
 import argparse
 import logging
-import sys
 from pathlib import Path
 from time import perf_counter
 
@@ -34,15 +33,13 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder
 
-# Path definitions
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-if str(PROJECT_DIR) not in sys.path:
-    sys.path.insert(0, str(PROJECT_DIR))
-
-from src.features.build_features import (  # noqa: E402
+from job_market_intelligence.features.build_features import (
     build_preprocessor,
     prepare_features,
 )
+
+# Path definitions
+PROJECT_DIR = Path(__file__).resolve().parents[3]
 
 # Logging configuration
 logging.basicConfig(
@@ -50,7 +47,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-CONFIG_PATH = PROJECT_DIR / "src" / "config" / "mlflow_config.yml"
+CONFIG_PATH = (
+    PROJECT_DIR / "src" / "job_market_intelligence" / "config" / "mlflow_config.yml"
+)
 MODELS_DIR = PROJECT_DIR / "models"
 MODEL_CHOICES = ("both", "lr", "rf")
 

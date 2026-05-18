@@ -6,13 +6,13 @@ import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
 
-from src.api.main import app
-from src.api.routers.chat import chat_with_rag, get_chat_rag_chain
-from src.api.schemas import ChatRequest
-from src.config.settings import Settings
-from src.rag.generator import GenerationConfig
-from src.rag.rag_chain import JobMarketRagChain
-from src.rag.retriever import RetrievedDocument
+from job_market_intelligence.api.main import app
+from job_market_intelligence.api.routers.chat import chat_with_rag, get_chat_rag_chain
+from job_market_intelligence.api.schemas import ChatRequest
+from job_market_intelligence.config.settings import Settings
+from job_market_intelligence.rag.generator import GenerationConfig
+from job_market_intelligence.rag.rag_chain import JobMarketRagChain
+from job_market_intelligence.rag.retriever import RetrievedDocument
 
 
 def sample_document() -> RetrievedDocument:
@@ -228,7 +228,10 @@ def test_get_chat_rag_chain_builds_chain_lazily(monkeypatch) -> None:
         assert settings is request.app.state.settings
         return chain
 
-    monkeypatch.setattr("src.api.routers.chat.build_chat_rag_chain", fake_builder)
+    monkeypatch.setattr(
+        "job_market_intelligence.api.routers.chat.build_chat_rag_chain",
+        fake_builder,
+    )
 
     response = asyncio.run(get_chat_rag_chain(request))
 
@@ -244,7 +247,10 @@ def test_get_chat_rag_chain_maps_build_errors_to_503(monkeypatch) -> None:
     def fake_builder(settings: Settings) -> JobMarketRagChain:
         raise ConnectionError("Qdrant is unavailable.")
 
-    monkeypatch.setattr("src.api.routers.chat.build_chat_rag_chain", fake_builder)
+    monkeypatch.setattr(
+        "job_market_intelligence.api.routers.chat.build_chat_rag_chain",
+        fake_builder,
+    )
 
     with pytest.raises(HTTPException) as exc_info:
         asyncio.run(get_chat_rag_chain(request))

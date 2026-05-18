@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from src.rag.retriever import QdrantRetriever, RetrievedDocument
+from job_market_intelligence.rag.retriever import QdrantRetriever, RetrievedDocument
 
 
 class FakeVector:

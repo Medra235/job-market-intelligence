@@ -6,15 +6,8 @@ Usage examples:
 """
 
 import argparse
-import sys
-from pathlib import Path
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-if str(PROJECT_DIR) not in sys.path:
-    sys.path.insert(0, str(PROJECT_DIR))
-
-from src.config.settings import settings  # noqa: E402
-from src.rag.generator import (  # noqa: E402
+from job_market_intelligence.config.settings import settings
+from job_market_intelligence.rag.generator import (
     GenerationConfig,
     generate_answer,
 )

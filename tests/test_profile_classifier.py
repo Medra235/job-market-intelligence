@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.models.profile_classifier import build_profile_feature_frame
+from job_market_intelligence.models.profile_classifier import build_profile_feature_frame
 
 
 def test_build_profile_feature_frame_matches_training_feature_schema() -> None:

@@ -6,8 +6,8 @@ from pathlib import Path
 import joblib
 import pandas as pd
 
-from src.config.settings import settings
-from src.features.build_features import prepare_features
+from job_market_intelligence.config.settings import settings
+from job_market_intelligence.features.build_features import prepare_features
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
 MODELS_DIR = PROJECT_DIR / "models"

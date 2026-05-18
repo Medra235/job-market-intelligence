@@ -1,8 +1,8 @@
 """Tests for the single-turn RAG chain."""
 
-from src.rag.rag_chain import JobMarketRagChain
-from src.rag.memory import ConversationMemory
-from src.rag.retriever import RetrievedDocument
+from job_market_intelligence.rag.rag_chain import JobMarketRagChain
+from job_market_intelligence.rag.memory import ConversationMemory
+from job_market_intelligence.rag.retriever import RetrievedDocument
 
 
 class FakeRetriever:

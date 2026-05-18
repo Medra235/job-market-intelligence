@@ -5,18 +5,11 @@ Usage example:
 """
 
 import argparse
-import sys
-from pathlib import Path
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-if str(PROJECT_DIR) not in sys.path:
-    sys.path.insert(0, str(PROJECT_DIR))
-
-from src.config.settings import settings  # noqa: E402
-from src.models.profile_classifier import JobCategoryClassifier  # noqa: E402
-from src.rag.generator import GenerationConfig, OllamaGenerator  # noqa: E402
-from src.rag.profile_evaluator import ProfileEvaluator  # noqa: E402
-from src.rag.retriever import QdrantRetriever  # noqa: E402
+from job_market_intelligence.config.settings import settings
+from job_market_intelligence.models.profile_classifier import JobCategoryClassifier
+from job_market_intelligence.rag.generator import GenerationConfig, OllamaGenerator
+from job_market_intelligence.rag.profile_evaluator import ProfileEvaluator
+from job_market_intelligence.rag.retriever import QdrantRetriever
 
 
 def parse_args() -> argparse.Namespace:

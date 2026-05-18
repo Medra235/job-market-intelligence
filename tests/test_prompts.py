@@ -3,7 +3,7 @@
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 
-from src.rag.prompts import (
+from job_market_intelligence.rag.prompts import (
     CHATBOT_SYSTEM_PROMPT,
     NO_CONTEXT_NOTICE,
     PROFILE_EVALUATION_SYSTEM_PROMPT,
@@ -11,7 +11,7 @@ from src.rag.prompts import (
     format_conversation_history,
     format_retrieved_documents,
 )
-from src.rag.retriever import RetrievedDocument
+from job_market_intelligence.rag.retriever import RetrievedDocument
 
 
 def sample_document() -> RetrievedDocument:

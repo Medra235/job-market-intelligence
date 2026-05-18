@@ -1,5 +1,5 @@
 [project]
-name = "tfg-market-intelligence"
+name = "job-market-intelligence"
 version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -62,3 +62,7 @@ notebooks = [
     "nbconvert==7.17.1",
     "nbstripout==0.9.1",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

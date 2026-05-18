@@ -2,14 +2,14 @@
 
 from dataclasses import dataclass
 
-from src.config.settings import settings
-from src.rag.generator import GenerationConfig, OllamaGenerator
-from src.rag.prompts import (
+from job_market_intelligence.config.settings import settings
+from job_market_intelligence.rag.generator import GenerationConfig, OllamaGenerator
+from job_market_intelligence.rag.prompts import (
     CHATBOT_SYSTEM_PROMPT,
     build_rag_prompt,
 )
-from src.rag.memory import ConversationMemory
-from src.rag.retriever import QdrantRetriever, RetrievedDocument
+from job_market_intelligence.rag.memory import ConversationMemory
+from job_market_intelligence.rag.retriever import QdrantRetriever, RetrievedDocument
 
 
 @dataclass(frozen=True)

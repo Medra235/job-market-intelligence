@@ -4,21 +4,21 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
-from src.api.schemas import (
+from job_market_intelligence.api.schemas import (
     CategoryPredictionResponse,
     ProfileEvaluationApiResponse,
     ProfileEvaluationRequest,
     ProfileSourceItem,
 )
-from src.api.services import build_profile_evaluator
-from src.config.settings import Settings
-from src.rag.profile_evaluator import (
+from job_market_intelligence.api.services import build_profile_evaluator
+from job_market_intelligence.config.settings import Settings
+from job_market_intelligence.rag.profile_evaluator import (
     ProfileEvaluationResponse as DomainProfileEvaluationResponse,
 )
-from src.rag.profile_evaluator import (
+from job_market_intelligence.rag.profile_evaluator import (
     ProfileEvaluator,
 )
-from src.rag.prompts import estimate_classifier_certainty
+from job_market_intelligence.rag.prompts import estimate_classifier_certainty
 
 router = APIRouter(
     prefix="/profile",

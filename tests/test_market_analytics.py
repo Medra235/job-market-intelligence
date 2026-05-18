@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from src.analytics.queries import DatasetPaths, MarketAnalytics
+from job_market_intelligence.analytics.queries import DatasetPaths, MarketAnalytics
 
 
 CSV_HEADER = (

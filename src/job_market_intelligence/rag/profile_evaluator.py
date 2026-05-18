@@ -2,15 +2,15 @@
 
 from dataclasses import dataclass
 
-from src.config.settings import settings
-from src.models.profile_classifier import CategoryPrediction, JobCategoryClassifier
-from src.rag.generator import GenerationConfig, OllamaGenerator
-from src.rag.prompts import (
+from job_market_intelligence.config.settings import settings
+from job_market_intelligence.models.profile_classifier import CategoryPrediction, JobCategoryClassifier
+from job_market_intelligence.rag.generator import GenerationConfig, OllamaGenerator
+from job_market_intelligence.rag.prompts import (
     PROFILE_EVALUATION_SYSTEM_PROMPT,
     build_profile_evaluation_prompt,
     estimate_classifier_certainty,
 )
-from src.rag.retriever import QdrantRetriever, RetrievedDocument
+from job_market_intelligence.rag.retriever import QdrantRetriever, RetrievedDocument
 
 
 @dataclass(frozen=True)

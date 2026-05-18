@@ -5,7 +5,7 @@ from typing import Any
 
 import httpx
 
-from src.config.settings import settings
+from job_market_intelligence.config.settings import settings
 
 
 @dataclass(frozen=True)

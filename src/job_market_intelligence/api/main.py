@@ -4,8 +4,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from src.api.routers import chat, market, profile
-from src.config.settings import settings
+from job_market_intelligence.api.routers import chat, market, profile
+from job_market_intelligence.config.settings import settings
 
 
 @asynccontextmanager
@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="TFG Market Intelligence API",
+    title="Job Market Intelligence API",
     lifespan=lifespan,
 )
 

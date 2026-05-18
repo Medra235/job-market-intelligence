@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.messages import BaseMessage
 
-from src.config.settings import settings
+from job_market_intelligence.config.settings import settings
 
 
 @dataclass
