@@ -40,6 +40,10 @@ build/
 *.log
 logs/
 
+# Coverage reports
+.coverage
+.coverage.*
+
 # OS
 .DS_Store
 Thumbs.db
