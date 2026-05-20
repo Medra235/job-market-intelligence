@@ -1,4 +1,3 @@
-# linguist-documentation excludes notebooks from repo language stats (they are analysis docs, not source code)
 # filter=nbstripout keeps git history clean by removing heavy notebook outputs
 *.ipynb linguist-documentation filter=nbstripout diff=ipynb
 

@@ -6,7 +6,7 @@ import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
 
-from job_market_intelligence.api.main import app
+from job_market_intelligence.api.main import app, health_check
 from job_market_intelligence.api.routers.chat import chat_with_rag, get_chat_rag_chain
 from job_market_intelligence.api.schemas import ChatRequest
 from job_market_intelligence.config.settings import Settings
@@ -206,6 +206,20 @@ def test_chat_route_is_registered_without_test_client() -> None:
     paths = {route.path for route in app.routes}
 
     assert "/chat" in paths
+
+
+def test_health_route_is_registered_without_test_client() -> None:
+    """The FastAPI app should expose a lightweight health endpoint."""
+    paths = {route.path for route in app.routes}
+
+    assert "/health" in paths
+
+
+def test_health_check_returns_ok_status() -> None:
+    """The health endpoint should not depend on external services."""
+    response = asyncio.run(health_check())
+
+    assert response == {"status": "ok"}
 
 
 def test_get_chat_rag_chain_reuses_cached_chain() -> None:

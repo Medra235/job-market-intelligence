@@ -31,3 +31,9 @@ app = FastAPI(
 app.include_router(market.router)
 app.include_router(profile.router)
 app.include_router(chat.router)
+
+
+@app.get("/health", tags=["health"])
+async def health_check() -> dict[str, str]:
+    """Return a lightweight process health check."""
+    return {"status": "ok"}
