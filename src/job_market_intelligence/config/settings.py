@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     """Configuration used to build API runtime services."""
 
     model_config = SettingsConfigDict(
-        env_prefix="TFG_",
+        env_prefix="JMI_",
         env_file=".env",
         env_ignore_empty=True,
         extra="ignore",
