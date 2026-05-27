@@ -1,13 +1,10 @@
-"""Tests for market API route functions."""
+"""Tests for market API endpoints."""
 
-import asyncio
+import pytest
+from fastapi.testclient import TestClient
 
-from job_market_intelligence.api.routers.market import (
-    market_categories,
-    market_salary_by_category,
-    market_summary,
-    market_work_types,
-)
+from job_market_intelligence.api.main import app
+from job_market_intelligence.api.routers.market import get_market_analytics
 
 
 class FakeMarketAnalytics:
@@ -60,49 +57,60 @@ def override_market_analytics() -> FakeMarketAnalytics:
     return FakeMarketAnalytics()
 
 
-def test_market_summary_returns_analytics_payload() -> None:
-    """The summary endpoint should delegate to the analytics layer."""
-    response = asyncio.run(market_summary(override_market_analytics()))
+@pytest.mark.parametrize(
+    ("path", "expected_payload"),
+    [
+        (
+            "/market/summary",
+            {
+                "total_postings": 3,
+                "total_categories": 2,
+                "postings_with_salary": 1,
+                "salary_coverage_pct": 33.33,
+                "yearly_salary_postings": 1,
+                "average_yearly_max_salary": 100000.0,
+            },
+        ),
+        (
+            "/market/categories?limit=1",
+            [
+                {
+                    "job_category": "Data Engineering",
+                    "total": 2,
+                    "percentage": 66.67,
+                }
+            ],
+        ),
+        (
+            "/market/work-types",
+            [
+                {"work_type": "Full-time", "total": 2, "percentage": 66.67},
+                {"work_type": "Contract", "total": 1, "percentage": 33.33},
+            ],
+        ),
+        (
+            "/market/salary-by-category",
+            [
+                {
+                    "job_category": "Data Engineering",
+                    "salary_postings": 2,
+                    "average_max_salary": 120000.0,
+                    "median_max_salary": 120000.0,
+                    "pay_period": "YEARLY",
+                }
+            ],
+        ),
+    ],
+)
+def test_market_endpoints_return_payloads_with_test_client(
+    api_client: TestClient,
+    path: str,
+    expected_payload: dict[str, object] | list[dict[str, object]],
+) -> None:
+    """Market endpoints should work through FastAPI routing and DI."""
+    app.dependency_overrides[get_market_analytics] = override_market_analytics
 
-    assert response == {
-        "total_postings": 3,
-        "total_categories": 2,
-        "postings_with_salary": 1,
-        "salary_coverage_pct": 33.33,
-        "yearly_salary_postings": 1,
-        "average_yearly_max_salary": 100000.0,
-    }
+    response = api_client.get(path)
 
-
-def test_market_categories_accepts_limit() -> None:
-    """The categories endpoint should pass limit to the analytics layer."""
-    response = asyncio.run(market_categories(override_market_analytics(), limit=1))
-
-    assert response == [
-        {"job_category": "Data Engineering", "total": 2, "percentage": 66.67}
-    ]
-
-
-def test_market_work_types_returns_analytics_payload() -> None:
-    """The work types endpoint should delegate to the analytics layer."""
-    response = asyncio.run(market_work_types(override_market_analytics()))
-
-    assert response == [
-        {"work_type": "Full-time", "total": 2, "percentage": 66.67},
-        {"work_type": "Contract", "total": 1, "percentage": 33.33},
-    ]
-
-
-def test_market_salary_by_category_returns_analytics_payload() -> None:
-    """The salary endpoint should delegate to the analytics layer."""
-    response = asyncio.run(market_salary_by_category(override_market_analytics()))
-
-    assert response == [
-        {
-            "job_category": "Data Engineering",
-            "salary_postings": 2,
-            "average_max_salary": 120000.0,
-            "median_max_salary": 120000.0,
-            "pay_period": "YEARLY",
-        }
-    ]
+    assert response.status_code == 200
+    assert response.json() == expected_payload
