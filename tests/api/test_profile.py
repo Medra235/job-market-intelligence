@@ -1,17 +1,19 @@
-"""Tests for profile API route functions."""
-
-import asyncio
+"""Tests for profile API endpoints."""
 
 import pytest
-from fastapi import HTTPException
-from pydantic import ValidationError
+from fastapi.testclient import TestClient
 
-from job_market_intelligence.api.routers.profile import evaluate_profile
-from job_market_intelligence.api.routers.profile import get_profile_evaluator
-from job_market_intelligence.api.schemas import ProfileEvaluationRequest
+from job_market_intelligence.api.main import app
+from job_market_intelligence.api.routers import profile as profile_router
+from job_market_intelligence.api.routers.profile import (
+    get_profile_evaluator,
+    get_settings,
+)
 from job_market_intelligence.config.settings import Settings
 from job_market_intelligence.models.profile_classifier import CategoryPrediction
-from job_market_intelligence.rag.profile_evaluator import ProfileEvaluationResponse as DomainProfileEvaluationResponse
+from job_market_intelligence.rag.profile_evaluator import (
+    ProfileEvaluationResponse as DomainProfileEvaluationResponse,
+)
 from job_market_intelligence.rag.retriever import RetrievedDocument
 
 
@@ -73,41 +75,37 @@ class FailingProfileEvaluator:
         include_category_prediction: bool = True,
     ) -> DomainProfileEvaluationResponse:
         """Raise the configured error."""
+        _ = (profile_text, top_k, include_category_prediction)
         raise self.error
 
 
-class FakeAppState:
-    """Minimal app state compatible with FastAPI request.app.state."""
-
-    def __init__(self) -> None:
-        self.settings = Settings()
-        self.profile_evaluator = None
-        self.profile_evaluator_error = None
+def override_profile_evaluator(evaluator: FakeProfileEvaluator) -> None:
+    """Register the fake profile evaluator dependency."""
+    app.dependency_overrides[get_profile_evaluator] = lambda: evaluator
 
 
-class FakeRequest:
-    """Minimal request object exposing app.state for dependency tests."""
-
-    def __init__(self) -> None:
-        self.app = type("FakeApp", (), {"state": FakeAppState()})()
-
-
-def test_profile_evaluate_returns_structured_response() -> None:
-    """The profile endpoint should expose classifier signal and RAG sources."""
+def test_profile_evaluate_returns_response_with_test_client(
+    api_client: TestClient,
+) -> None:
+    """Profile evaluation should expose classifier signal and RAG sources."""
     evaluator = FakeProfileEvaluator()
-    request = ProfileEvaluationRequest(
-        profile_text="Python, SQL, pandas and Airflow.",
-        top_k=3,
+    override_profile_evaluator(evaluator)
+
+    response = api_client.post(
+        "/profile/evaluate",
+        json={
+            "profile_text": "Python, SQL, pandas and Airflow.",
+            "top_k": 3,
+        },
     )
 
-    response = asyncio.run(evaluate_profile(request, evaluator, Settings()))
-
+    assert response.status_code == 200
     assert evaluator.last_call == {
         "profile_text": "Python, SQL, pandas and Airflow.",
         "top_k": 3,
         "include_category_prediction": True,
     }
-    assert response.model_dump() == {
+    assert response.json() == {
         "profile_text": "Python, SQL, pandas and Airflow.",
         "category_prediction": {
             "label": "Data Engineering",
@@ -127,23 +125,20 @@ def test_profile_evaluate_returns_structured_response() -> None:
     }
 
 
-@pytest.mark.parametrize("profile_text", ["", "   "])
-def test_profile_evaluation_request_rejects_empty_profile(profile_text: str) -> None:
-    """The API request schema should reject blank profile text."""
-    with pytest.raises(ValidationError):
-        ProfileEvaluationRequest(profile_text=profile_text)
-
-
-def test_profile_evaluate_uses_configured_default_top_k() -> None:
-    """The profile endpoint should use settings when top_k is omitted."""
+def test_profile_evaluate_uses_configured_default_top_k(
+    api_client: TestClient,
+) -> None:
+    """The endpoint should use settings.profile_top_k when top_k is omitted."""
     evaluator = FakeProfileEvaluator()
-    request = ProfileEvaluationRequest(
-        profile_text="Python, SQL, pandas and Airflow.",
+    override_profile_evaluator(evaluator)
+    app.dependency_overrides[get_settings] = lambda: Settings(profile_top_k=7)
+
+    response = api_client.post(
+        "/profile/evaluate",
+        json={"profile_text": "Python, SQL, pandas and Airflow."},
     )
-    settings = Settings(profile_top_k=7)
 
-    asyncio.run(evaluate_profile(request, evaluator, settings))
-
+    assert response.status_code == 200
     assert evaluator.last_call == {
         "profile_text": "Python, SQL, pandas and Airflow.",
         "top_k": 7,
@@ -151,92 +146,99 @@ def test_profile_evaluate_uses_configured_default_top_k() -> None:
     }
 
 
-def test_get_profile_evaluator_reuses_cached_evaluator() -> None:
-    """The dependency should reuse the evaluator stored in app state."""
-    request = FakeRequest()
+def test_profile_evaluate_returns_422_for_blank_profile(
+    api_client: TestClient,
+) -> None:
+    """Request validation errors should be exposed as HTTP 422 responses."""
+    override_profile_evaluator(FakeProfileEvaluator())
+
+    response = api_client.post("/profile/evaluate", json={"profile_text": "   "})
+
+    assert response.status_code == 422
+    assert "Profile text cannot be empty." in response.text
+
+
+@pytest.mark.parametrize(
+    ("error", "expected_status", "expected_detail"),
+    [
+        (ValueError("top_k must be greater than 0."), 400, "top_k must be greater"),
+        (
+            RuntimeError("Could not generate a response with Ollama."),
+            503,
+            "Could not generate a response with Ollama.",
+        ),
+        (ConnectionError("Qdrant is unavailable."), 503, "Qdrant and Ollama"),
+    ],
+)
+def test_profile_evaluate_maps_domain_errors(
+    api_client: TestClient,
+    error: Exception,
+    expected_status: int,
+    expected_detail: str,
+) -> None:
+    """Domain and dependency errors should become explicit HTTP responses."""
+    app.dependency_overrides[get_profile_evaluator] = lambda: FailingProfileEvaluator(
+        error
+    )
+
+    response = api_client.post(
+        "/profile/evaluate",
+        json={"profile_text": "Python and SQL."},
+    )
+
+    assert response.status_code == expected_status
+    assert expected_detail in response.json()["detail"]
+
+
+def test_profile_evaluator_is_built_lazily_and_cached(
+    api_client: TestClient,
+    monkeypatch,
+) -> None:
+    """The real dependency should build the evaluator once and reuse it."""
     evaluator = FakeProfileEvaluator()
-    request.app.state.profile_evaluator = evaluator
-
-    response = asyncio.run(get_profile_evaluator(request))
-
-    assert response is evaluator
-
-
-def test_get_profile_evaluator_builds_evaluator_lazily(monkeypatch) -> None:
-    """The dependency should build and cache the evaluator on first use."""
-    request = FakeRequest()
-    evaluator = FakeProfileEvaluator()
+    build_calls = 0
 
     def fake_builder(settings: Settings) -> FakeProfileEvaluator:
-        assert settings is request.app.state.settings
+        nonlocal build_calls
+        build_calls += 1
+        assert settings is app.state.settings
         return evaluator
 
-    monkeypatch.setattr(
-        "job_market_intelligence.api.routers.profile.build_profile_evaluator",
-        fake_builder,
+    monkeypatch.setattr(profile_router, "build_profile_evaluator", fake_builder)
+
+    first_response = api_client.post(
+        "/profile/evaluate",
+        json={"profile_text": "Python and SQL."},
+    )
+    second_response = api_client.post(
+        "/profile/evaluate",
+        json={"profile_text": "Python and SQL."},
     )
 
-    response = asyncio.run(get_profile_evaluator(request))
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    assert build_calls == 1
+    assert app.state.profile_evaluator is evaluator
+    assert app.state.profile_evaluator_error is None
 
-    assert response is evaluator
-    assert request.app.state.profile_evaluator is evaluator
-    assert request.app.state.profile_evaluator_error is None
 
-
-def test_get_profile_evaluator_maps_build_errors_to_503(monkeypatch) -> None:
+def test_profile_evaluator_build_error_returns_503(
+    api_client: TestClient,
+    monkeypatch,
+) -> None:
     """Dependency startup failures should be explicit service errors."""
-    request = FakeRequest()
 
-    def fake_builder(settings: Settings) -> FakeProfileEvaluator:
+    def fake_builder(_settings: Settings) -> FakeProfileEvaluator:
         raise ConnectionError("Qdrant is unavailable.")
 
-    monkeypatch.setattr(
-        "job_market_intelligence.api.routers.profile.build_profile_evaluator",
-        fake_builder,
+    monkeypatch.setattr(profile_router, "build_profile_evaluator", fake_builder)
+
+    response = api_client.post(
+        "/profile/evaluate",
+        json={"profile_text": "Python and SQL."},
     )
 
-    with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(get_profile_evaluator(request))
-
-    assert exc_info.value.status_code == 503
-    assert "Qdrant is unavailable" in str(exc_info.value.detail)
-    assert request.app.state.profile_evaluator is None
-    assert isinstance(request.app.state.profile_evaluator_error, ConnectionError)
-
-
-def test_profile_evaluate_maps_validation_errors_to_400() -> None:
-    """Domain validation errors should become explicit client errors."""
-    request = ProfileEvaluationRequest(profile_text="Python and SQL.")
-    evaluator = FailingProfileEvaluator(ValueError("top_k must be greater than 0."))
-
-    with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(evaluate_profile(request, evaluator, Settings()))
-
-    assert exc_info.value.status_code == 400
-    assert exc_info.value.detail == "top_k must be greater than 0."
-
-
-def test_profile_evaluate_maps_runtime_errors_to_503() -> None:
-    """External dependency failures should become service unavailable errors."""
-    request = ProfileEvaluationRequest(profile_text="Python and SQL.")
-    evaluator = FailingProfileEvaluator(
-        RuntimeError("Could not generate a response with Ollama.")
-    )
-
-    with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(evaluate_profile(request, evaluator, Settings()))
-
-    assert exc_info.value.status_code == 503
-    assert exc_info.value.detail == "Could not generate a response with Ollama."
-
-
-def test_profile_evaluate_maps_unexpected_dependency_errors_to_503() -> None:
-    """Unexpected Qdrant/Ollama failures should avoid generic 500 responses."""
-    request = ProfileEvaluationRequest(profile_text="Python and SQL.")
-    evaluator = FailingProfileEvaluator(ConnectionError("Qdrant is unavailable."))
-
-    with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(evaluate_profile(request, evaluator, Settings()))
-
-    assert exc_info.value.status_code == 503
-    assert "Qdrant and Ollama" in str(exc_info.value.detail)
+    assert response.status_code == 503
+    assert "Qdrant is unavailable" in response.json()["detail"]
+    assert app.state.profile_evaluator is None
+    assert isinstance(app.state.profile_evaluator_error, ConnectionError)

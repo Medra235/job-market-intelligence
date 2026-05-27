@@ -1,14 +1,11 @@
-"""Tests for RAG chatbot API route functions."""
-
-import asyncio
+"""Tests for RAG chatbot API endpoints."""
 
 import pytest
-from fastapi import HTTPException
-from pydantic import ValidationError
+from fastapi.testclient import TestClient
 
-from job_market_intelligence.api.main import app, health_check
-from job_market_intelligence.api.routers.chat import chat_with_rag, get_chat_rag_chain
-from job_market_intelligence.api.schemas import ChatRequest
+from job_market_intelligence.api.main import app
+from job_market_intelligence.api.routers import chat as chat_router
+from job_market_intelligence.api.routers.chat import get_chat_rag_chain, get_settings
 from job_market_intelligence.config.settings import Settings
 from job_market_intelligence.rag.generator import GenerationConfig
 from job_market_intelligence.rag.rag_chain import JobMarketRagChain
@@ -62,6 +59,7 @@ class FakeGenerator:
         config: GenerationConfig | None = None,
     ) -> str:
         """Return a deterministic answer."""
+        _ = (system_prompt, config)
         self.last_prompt = prompt
         return "Prioriza Python, deployment y MLOps con evidencia del corpus."
 
@@ -80,23 +78,8 @@ class FailingRetriever(FakeRetriever):
         score_threshold: float | None = None,
     ) -> list[RetrievedDocument]:
         """Raise the configured error."""
+        _ = (query, top_k, score_threshold)
         raise self.error
-
-
-class FakeAppState:
-    """Minimal app state compatible with FastAPI request.app.state."""
-
-    def __init__(self) -> None:
-        self.settings = Settings()
-        self.chat_rag_chain = None
-        self.chat_rag_chain_error = None
-
-
-class FakeRequest:
-    """Minimal request object exposing app.state for dependency tests."""
-
-    def __init__(self) -> None:
-        self.app = type("FakeApp", (), {"state": FakeAppState()})()
 
 
 def build_fake_chain(
@@ -110,24 +93,40 @@ def build_fake_chain(
     )
 
 
-def test_chat_returns_answer_and_sources() -> None:
+def override_chat_chain(chain: JobMarketRagChain) -> None:
+    """Register the fake chat chain dependency."""
+    app.dependency_overrides[get_chat_rag_chain] = lambda: chain
+
+
+def test_health_check_returns_ok(api_client: TestClient) -> None:
+    """The health endpoint should work through FastAPI routing."""
+    response = api_client.get("/health")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
+def test_chat_returns_answer_and_sources(api_client: TestClient) -> None:
     """The chat endpoint should expose the generated answer and RAG sources."""
     retriever = FakeRetriever()
-    generator = FakeGenerator()
-    chain = build_fake_chain(retriever=retriever, generator=generator)
-    request = ChatRequest(
-        message="What should I learn for ML Engineer roles?",
-        top_k=3,
+    chain = build_fake_chain(retriever=retriever)
+    override_chat_chain(chain)
+
+    response = api_client.post(
+        "/chat",
+        json={
+            "message": "What should I learn for ML Engineer roles?",
+            "top_k": 3,
+        },
     )
 
-    response = asyncio.run(chat_with_rag(request, chain, Settings()))
-
+    assert response.status_code == 200
     assert retriever.last_call == {
         "query": "What should I learn for ML Engineer roles?",
         "top_k": 3,
         "score_threshold": None,
     }
-    assert response.model_dump() == {
+    assert response.json() == {
         "message": "What should I learn for ML Engineer roles?",
         "answer": "Prioriza Python, deployment y MLOps con evidencia del corpus.",
         "sources": [
@@ -142,15 +141,19 @@ def test_chat_returns_answer_and_sources() -> None:
     }
 
 
-def test_chat_uses_configured_default_top_k() -> None:
-    """The chat endpoint should use settings when top_k is omitted."""
+def test_chat_uses_configured_default_top_k(api_client: TestClient) -> None:
+    """The endpoint should use settings.max_context_documents when top_k is omitted."""
     retriever = FakeRetriever()
     chain = build_fake_chain(retriever=retriever)
-    request = ChatRequest(message="Compare backend and data engineering skills.")
-    settings = Settings(max_context_documents=7)
+    override_chat_chain(chain)
+    app.dependency_overrides[get_settings] = lambda: Settings(max_context_documents=7)
 
-    asyncio.run(chat_with_rag(request, chain, settings))
+    response = api_client.post(
+        "/chat",
+        json={"message": "Compare backend and data engineering skills."},
+    )
 
+    assert response.status_code == 200
     assert retriever.last_call == {
         "query": "Compare backend and data engineering skills.",
         "top_k": 7,
@@ -158,26 +161,32 @@ def test_chat_uses_configured_default_top_k() -> None:
     }
 
 
-def test_chat_includes_request_history_without_mutating_cached_chain() -> None:
+def test_chat_uses_request_history_without_mutating_cached_chain(
+    api_client: TestClient,
+) -> None:
     """Client-provided history should be scoped to the current request only."""
     generator = FakeGenerator()
     chain = build_fake_chain(generator=generator)
-    request = ChatRequest(
-        message="And what should come next?",
-        history=[
-            {
-                "role": "user",
-                "content": "I know Python and SQL.",
-            },
-            {
-                "role": "assistant",
-                "content": "That is a good foundation for data roles.",
-            },
-        ],
+    override_chat_chain(chain)
+
+    response = api_client.post(
+        "/chat",
+        json={
+            "message": "And what should come next?",
+            "history": [
+                {
+                    "role": "user",
+                    "content": "I know Python and SQL.",
+                },
+                {
+                    "role": "assistant",
+                    "content": "That is a good foundation for data roles.",
+                },
+            ],
+        },
     )
 
-    asyncio.run(chat_with_rag(request, chain, Settings()))
-
+    assert response.status_code == 200
     assert generator.last_prompt is not None
     assert "Historial de conversación previo" in generator.last_prompt
     assert "usuario: I know Python and SQL." in generator.last_prompt
@@ -185,129 +194,99 @@ def test_chat_includes_request_history_without_mutating_cached_chain() -> None:
     assert chain.memory.messages == []
 
 
-@pytest.mark.parametrize("message", ["", "   "])
-def test_chat_request_rejects_empty_message(message: str) -> None:
-    """The API request schema should reject blank user messages."""
-    with pytest.raises(ValidationError):
-        ChatRequest(message=message)
+def test_chat_returns_422_for_blank_message(api_client: TestClient) -> None:
+    """Request validation errors should be exposed as HTTP 422 responses."""
+    override_chat_chain(build_fake_chain())
+
+    response = api_client.post("/chat", json={"message": "   "})
+
+    assert response.status_code == 422
+    assert "Message cannot be empty." in response.text
 
 
-def test_chat_request_rejects_empty_history_content() -> None:
-    """The API request schema should reject blank history messages."""
-    with pytest.raises(ValidationError):
-        ChatRequest(
-            message="What should I learn?",
-            history=[{"role": "user", "content": "   "}],
-        )
+def test_chat_returns_422_for_blank_history_message(api_client: TestClient) -> None:
+    """History validation errors should be exposed as HTTP 422 responses."""
+    override_chat_chain(build_fake_chain())
+
+    response = api_client.post(
+        "/chat",
+        json={
+            "message": "What should I learn?",
+            "history": [{"role": "user", "content": "   "}],
+        },
+    )
+
+    assert response.status_code == 422
+    assert "Chat message content cannot be empty." in response.text
 
 
-def test_chat_route_is_registered_without_test_client() -> None:
-    """The FastAPI app should register the chat endpoint."""
-    paths = {route.path for route in app.routes}
+@pytest.mark.parametrize(
+    ("error", "expected_status", "expected_detail"),
+    [
+        (ValueError("bad query"), 400, "bad query"),
+        (RuntimeError("Could not reach Qdrant."), 503, "Could not reach Qdrant."),
+        (ConnectionError("down"), 503, "Qdrant and Ollama"),
+    ],
+)
+def test_chat_maps_domain_errors(
+    api_client: TestClient,
+    error: Exception,
+    expected_status: int,
+    expected_detail: str,
+) -> None:
+    """Domain and dependency errors should become explicit HTTP responses."""
+    chain = build_fake_chain(retriever=FailingRetriever(error))
+    override_chat_chain(chain)
 
-    assert "/chat" in paths
+    response = api_client.post("/chat", json={"message": "What should I learn?"})
+
+    assert response.status_code == expected_status
+    assert expected_detail in response.json()["detail"]
 
 
-def test_health_route_is_registered_without_test_client() -> None:
-    """The FastAPI app should expose a lightweight health endpoint."""
-    paths = {route.path for route in app.routes}
-
-    assert "/health" in paths
-
-
-def test_health_check_returns_ok_status() -> None:
-    """The health endpoint should not depend on external services."""
-    response = asyncio.run(health_check())
-
-    assert response == {"status": "ok"}
-
-
-def test_get_chat_rag_chain_reuses_cached_chain() -> None:
-    """The dependency should reuse the chain stored in app state."""
-    request = FakeRequest()
+def test_chat_chain_is_built_lazily_and_cached(
+    api_client: TestClient,
+    monkeypatch,
+) -> None:
+    """The real dependency should build the RAG chain once and reuse it."""
     chain = build_fake_chain()
-    request.app.state.chat_rag_chain = chain
-
-    response = asyncio.run(get_chat_rag_chain(request))
-
-    assert response is chain
-
-
-def test_get_chat_rag_chain_builds_chain_lazily(monkeypatch) -> None:
-    """The dependency should build and cache the RAG chain on first use."""
-    request = FakeRequest()
-    chain = build_fake_chain()
+    build_calls = 0
 
     def fake_builder(settings: Settings) -> JobMarketRagChain:
-        assert settings is request.app.state.settings
+        nonlocal build_calls
+        build_calls += 1
+        assert settings is app.state.settings
         return chain
 
-    monkeypatch.setattr(
-        "job_market_intelligence.api.routers.chat.build_chat_rag_chain",
-        fake_builder,
+    monkeypatch.setattr(chat_router, "build_chat_rag_chain", fake_builder)
+
+    first_response = api_client.post("/chat", json={"message": "What should I learn?"})
+    second_response = api_client.post(
+        "/chat",
+        json={"message": "What should I learn?"},
     )
 
-    response = asyncio.run(get_chat_rag_chain(request))
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    assert build_calls == 1
+    assert app.state.chat_rag_chain is chain
+    assert app.state.chat_rag_chain_error is None
 
-    assert response is chain
-    assert request.app.state.chat_rag_chain is chain
-    assert request.app.state.chat_rag_chain_error is None
 
-
-def test_get_chat_rag_chain_maps_build_errors_to_503(monkeypatch) -> None:
+def test_chat_chain_build_error_returns_503(
+    api_client: TestClient,
+    monkeypatch,
+) -> None:
     """Dependency startup failures should be explicit service errors."""
-    request = FakeRequest()
 
-    def fake_builder(settings: Settings) -> JobMarketRagChain:
+    def fake_builder(_settings: Settings) -> JobMarketRagChain:
         raise ConnectionError("Qdrant is unavailable.")
 
-    monkeypatch.setattr(
-        "job_market_intelligence.api.routers.chat.build_chat_rag_chain",
-        fake_builder,
-    )
+    monkeypatch.setattr(chat_router, "build_chat_rag_chain", fake_builder)
 
-    with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(get_chat_rag_chain(request))
+    response = api_client.post("/chat", json={"message": "What should I learn?"})
 
-    assert exc_info.value.status_code == 503
-    assert "Qdrant is unavailable" in str(exc_info.value.detail)
-    assert request.app.state.chat_rag_chain is None
-    assert isinstance(request.app.state.chat_rag_chain_error, ConnectionError)
-
-
-def test_chat_maps_validation_errors_to_400() -> None:
-    """Domain validation errors should become explicit client errors."""
-    request = ChatRequest(message="What should I learn?")
-    chain = build_fake_chain(retriever=FailingRetriever(ValueError("bad query")))
-
-    with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(chat_with_rag(request, chain, Settings()))
-
-    assert exc_info.value.status_code == 400
-    assert exc_info.value.detail == "bad query"
-
-
-def test_chat_maps_runtime_errors_to_503() -> None:
-    """External dependency failures should become service unavailable errors."""
-    request = ChatRequest(message="What should I learn?")
-    chain = build_fake_chain(
-        retriever=FailingRetriever(RuntimeError("Could not reach Qdrant."))
-    )
-
-    with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(chat_with_rag(request, chain, Settings()))
-
-    assert exc_info.value.status_code == 503
-    assert exc_info.value.detail == "Could not reach Qdrant."
-
-
-def test_chat_maps_unexpected_dependency_errors_to_503() -> None:
-    """Unexpected Qdrant/Ollama failures should avoid generic 500 responses."""
-    request = ChatRequest(message="What should I learn?")
-    chain = build_fake_chain(retriever=FailingRetriever(ConnectionError("down")))
-
-    with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(chat_with_rag(request, chain, Settings()))
-
-    assert exc_info.value.status_code == 503
-    assert "Qdrant and Ollama" in str(exc_info.value.detail)
+    assert response.status_code == 503
+    assert "Qdrant is unavailable" in response.json()["detail"]
+    assert app.state.chat_rag_chain is None
+    assert isinstance(app.state.chat_rag_chain_error, ConnectionError)
