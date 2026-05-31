@@ -22,7 +22,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Path Definitions
-PROJECT_DIR = Path(__file__).resolve().parents[2]
+PROJECT_DIR = Path(__file__).resolve().parents[3]
 PROCESSED_DATA_DIR = PROJECT_DIR / "data" / "processed"
 
 # Columns used as features

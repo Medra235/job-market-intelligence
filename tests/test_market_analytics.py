@@ -4,13 +4,26 @@ from pathlib import Path
 
 import pytest
 
-from job_market_intelligence.analytics.queries import DatasetPaths, MarketAnalytics
+from job_market_intelligence.analytics.queries import (
+    DEFAULT_TEST_PATH,
+    DEFAULT_TRAIN_PATH,
+    DatasetPaths,
+    MarketAnalytics,
+)
 
 
 CSV_HEADER = (
     "job_id,title,description,max_salary,pay_period,"
     "formatted_work_type,job_category,has_salary\n"
 )
+
+
+def test_default_dataset_paths_point_to_project_data_dir() -> None:
+    """Default analytics paths should point to the repository data directory."""
+    project_dir = Path(__file__).resolve().parents[1]
+
+    assert DEFAULT_TRAIN_PATH == project_dir / "data" / "processed" / "train.csv"
+    assert DEFAULT_TEST_PATH == project_dir / "data" / "processed" / "test.csv"
 
 
 def write_processed_csv(path: Path, rows: list[str]) -> None:

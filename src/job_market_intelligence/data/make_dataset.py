@@ -9,8 +9,13 @@ import re
 from pathlib import Path
 
 import pandas as pd
-from categories import CATEGORY_PRIORITY, EXCLUDE_KEYWORDS, JOB_CATEGORIES
 from sklearn.model_selection import train_test_split
+
+from job_market_intelligence.data.categories import (
+    CATEGORY_PRIORITY,
+    EXCLUDE_KEYWORDS,
+    JOB_CATEGORIES,
+)
 
 # Logging Configuration
 logging.basicConfig(
@@ -20,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 # Path Definitions
-PROJECT_DIR = Path(__file__).resolve().parents[2]
+PROJECT_DIR = Path(__file__).resolve().parents[3]
 RAW_DATA_DIR = PROJECT_DIR / "data" / "raw"
 PROCESSED_DATA_DIR = PROJECT_DIR / "data" / "processed"
 
