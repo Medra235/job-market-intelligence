@@ -135,6 +135,7 @@ def test_chat_returns_answer_and_sources(api_client: TestClient) -> None:
                 "title": "Machine Learning Engineer",
                 "job_category": "AI/ML",
                 "score": 0.91,
+                "description": "Python, model deployment and MLOps role.",
                 "description_preview": "Python and MLOps role.",
             }
         ],

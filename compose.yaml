@@ -10,7 +10,7 @@ services:
     volumes:
       - type: bind
         source: ./data/processed
-        target: /app/src/data/processed
+        target: /app/data/processed
         read_only: true
     depends_on:
       qdrant:

@@ -6,7 +6,7 @@ from typing import Any
 
 import duckdb
 
-PROJECT_DIR = Path(__file__).resolve().parents[2]
+PROJECT_DIR = Path(__file__).resolve().parents[3]
 PROCESSED_DATA_DIR = PROJECT_DIR / "data" / "processed"
 DEFAULT_TRAIN_PATH = PROCESSED_DATA_DIR / "train.csv"
 DEFAULT_TEST_PATH = PROCESSED_DATA_DIR / "test.csv"

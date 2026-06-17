@@ -140,6 +140,7 @@ def _to_api_response(response: RagResponse) -> ChatResponse:
                 title=document.title,
                 job_category=document.job_category,
                 score=document.score,
+                description=document.description,
                 description_preview=document.description_preview,
             )
             for document in response.documents

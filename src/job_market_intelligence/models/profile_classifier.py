@@ -9,7 +9,7 @@ import pandas as pd
 from job_market_intelligence.config.settings import settings
 from job_market_intelligence.features.build_features import prepare_features
 
-PROJECT_DIR = Path(__file__).resolve().parents[2]
+PROJECT_DIR = Path(__file__).resolve().parents[3]
 MODELS_DIR = PROJECT_DIR / "models"
 
 

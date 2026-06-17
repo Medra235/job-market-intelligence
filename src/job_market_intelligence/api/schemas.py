@@ -92,6 +92,7 @@ class ProfileSourceItem(BaseModel):
     title: str
     job_category: str
     score: float
+    description: str
 
 
 class ProfileEvaluationApiResponse(BaseModel):
@@ -170,6 +171,7 @@ class ChatSourceItem(BaseModel):
     title: str
     job_category: str
     score: float
+    description: str
     description_preview: str
 
 

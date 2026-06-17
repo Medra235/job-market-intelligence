@@ -120,6 +120,7 @@ def test_profile_evaluate_returns_response_with_test_client(
                 "title": "Data Engineer",
                 "job_category": "Data Engineering",
                 "score": 0.82,
+                "description": "Python, SQL and Airflow role.",
             }
         ],
     }

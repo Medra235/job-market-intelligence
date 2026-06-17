@@ -25,6 +25,8 @@ class Settings(BaseSettings):
 
     classifier_model_type: str = "random_forest"
 
+    api_base_url: str = "http://localhost:8000"
+
     max_context_documents: int = Field(default=5, ge=1, le=10)
     max_history_messages: int = Field(default=8, ge=1)
     max_preview_chars: int = Field(default=700, ge=100)
