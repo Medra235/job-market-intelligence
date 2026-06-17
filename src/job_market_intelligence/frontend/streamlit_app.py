@@ -50,7 +50,7 @@ def main() -> None:
             ),
             st.Page(
                 profile_evaluator_page,
-                title="Profile Evaluator",
+                title="Evaluador de perfil",
                 icon=":material/person_search:",
                 url_path="profile-evaluator",
             ),
@@ -71,13 +71,13 @@ def _render_api_status(client: JobMarketApiClient) -> None:
     try:
         health = client.health()
     except ApiClientError:
-        st.sidebar.error("API unavailable")
+        st.sidebar.error("API no disponible")
         return
 
     if health.get("status") == "ok":
-        st.sidebar.success("API online")
+        st.sidebar.success("API disponible")
     else:
-        st.sidebar.warning("API status unknown")
+        st.sidebar.warning("Estado de API desconocido")
 
 
 if __name__ == "__main__":
