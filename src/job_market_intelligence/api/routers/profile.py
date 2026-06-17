@@ -136,6 +136,7 @@ def _to_api_response(
                 title=document.title,
                 job_category=document.job_category,
                 score=document.score,
+                description=document.description,
             )
             for document in response.documents
         ],

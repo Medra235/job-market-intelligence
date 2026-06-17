@@ -13,10 +13,9 @@ from job_market_intelligence.frontend.pages import (
     profile_evaluator,
 )
 
-
 st.set_page_config(
     page_title="Job Market Intelligence",
-    page_icon=None,
+    page_icon="💼",
     layout="wide",
 )
 
@@ -30,10 +29,6 @@ def get_api_client(base_url: str) -> JobMarketApiClient:
 def main() -> None:
     """Render the Streamlit MVP shell and route pages."""
     client = get_api_client(settings.api_base_url)
-
-    st.sidebar.title("Job Market Intelligence")
-    st.sidebar.caption(f"API: {settings.api_base_url}")
-    _render_api_status(client)
 
     def dashboard_page() -> None:
         dashboard.render(client)
@@ -49,7 +44,7 @@ def main() -> None:
             st.Page(
                 dashboard_page,
                 title="Dashboard",
-                icon=":material/dashboard:",
+                icon=":material/analytics:",
                 url_path="dashboard",
                 default=True,
             ),
@@ -68,6 +63,7 @@ def main() -> None:
         ],
         position="sidebar",
     )
+    _render_api_status(client)
     selected_page.run()
 
 
