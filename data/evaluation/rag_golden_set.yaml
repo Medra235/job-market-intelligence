@@ -1,0 +1,230 @@
+metadata:
+  name: rag_golden_set
+  description: >
+    Manual golden set for evaluating the job-market RAG retriever with top-k
+    metrics and supporting later manual review of generated answers.
+  default_top_k: 5
+  relevance_guidance:
+    - >
+      A relevant document provides useful evidence for answering the query.
+    - >
+      Use categories and keywords as signals, then check the title and
+      description.
+    - >
+      Do not count broad keyword matches without aligned role, skill, or
+      responsibility evidence.
+
+queries:
+  - id: data_engineering_learning_path
+    query: "What should I learn for a Data Engineering role?"
+    expected_categories:
+      - Data Engineering
+    expected_keywords:
+      - Python
+      - SQL
+      - Airflow
+      - ETL
+      - Spark
+      - Kafka
+      - data pipeline
+      - data warehouse
+    relevance_note: >
+      Relevant documents should mention data pipelines, ETL, warehouses, or
+      data platform responsibilities.
+
+  - id: frontend_react_skills
+    query: "Which skills are useful for a Frontend Developer working with React?"
+    expected_categories:
+      - Frontend
+    expected_keywords:
+      - React
+      - TypeScript
+      - JavaScript
+      - CSS
+      - HTML
+      - Next.js
+      - frontend
+    relevance_note: >
+      Relevant documents should focus on frontend web development rather than
+      generic software engineering.
+
+  - id: devops_platform_skills
+    query: "What tools appear in DevOps or platform engineering roles?"
+    expected_categories:
+      - DevOps/SRE
+      - Cloud
+    expected_keywords:
+      - Kubernetes
+      - Docker
+      - Terraform
+      - CI/CD
+      - Jenkins
+      - GitHub Actions
+      - infrastructure as code
+    relevance_note: >
+      Relevant documents should describe deployment, automation, platform, SRE,
+      or infrastructure responsibilities.
+
+  - id: ai_ml_engineer_skills
+    query: "What skills should I prioritize for an AI or Machine Learning Engineer role?"
+    expected_categories:
+      - AI/ML
+    expected_keywords:
+      - Machine Learning
+      - Deep Learning
+      - Python
+      - PyTorch
+      - TensorFlow
+      - scikit-learn
+      - NLP
+      - MLOps
+    relevance_note: >
+      Relevant documents should contain AI, ML, data science, model training,
+      NLP, computer vision, or MLOps evidence.
+
+  - id: data_analytics_bi_tools
+    query: "What tools are common for Data Analyst or Business Intelligence roles?"
+    expected_categories:
+      - Data Analytics
+    expected_keywords:
+      - SQL
+      - Tableau
+      - Power BI
+      - Looker
+      - reporting
+      - dashboard
+      - data visualization
+    relevance_note: >
+      Relevant documents should emphasize analytics, dashboards, reporting, BI,
+      or visualization work.
+
+  - id: backend_api_development
+    query: "What backend skills are useful for building APIs and services?"
+    expected_categories:
+      - Backend
+      - Software Engineer
+    expected_keywords:
+      - REST API
+      - GraphQL
+      - FastAPI
+      - Django
+      - Flask
+      - Spring Boot
+      - microservices
+      - server-side
+    relevance_note: >
+      Relevant documents should describe backend, server-side, API, or
+      microservice development.
+
+  - id: cybersecurity_soc_skills
+    query: "What skills should I look at for cybersecurity or SOC analyst roles?"
+    expected_categories:
+      - Cybersecurity
+    expected_keywords:
+      - cybersecurity
+      - security
+      - SIEM
+      - incident response
+      - threat detection
+      - vulnerability
+      - SOC
+    relevance_note: >
+      Relevant documents should focus on security operations, defensive
+      security, incident response, or vulnerability management.
+
+  - id: cloud_engineer_skills
+    query: "What should I learn for a Cloud Engineer role?"
+    expected_categories:
+      - Cloud
+      - DevOps/SRE
+    expected_keywords:
+      - AWS
+      - Azure
+      - GCP
+      - Google Cloud
+      - cloud infrastructure
+      - serverless
+      - Lambda
+      - Kubernetes
+    relevance_note: >
+      Relevant documents should describe cloud platforms, infrastructure,
+      serverless services, or cloud-native responsibilities.
+
+  - id: qa_automation_tools
+    query: "Which tools are relevant for QA automation or test engineer roles?"
+    expected_categories:
+      - QA/Testing
+    expected_keywords:
+      - QA
+      - test automation
+      - Selenium
+      - Cypress
+      - SDET
+      - quality assurance
+    relevance_note: >
+      Relevant documents should focus on automated testing, QA engineering, or
+      SDET responsibilities.
+
+  - id: mobile_developer_stack
+    query: "What technologies are useful for mobile developer roles?"
+    expected_categories:
+      - Mobile
+    expected_keywords:
+      - iOS
+      - Android
+      - Flutter
+      - React Native
+      - Swift
+      - Kotlin
+      - mobile app
+    relevance_note: >
+      Relevant documents should describe mobile application development for iOS,
+      Android, or cross-platform frameworks.
+
+  - id: follow_up_data_engineering_analytics
+    conversation_history:
+      - role: user
+        content: "I want to move into Data Engineering."
+      - role: assistant
+        content: "Focus on pipelines, SQL, Python, orchestration, and cloud data platforms."
+    query: "And what about the analytics side?"
+    standalone_query: "What analytics and BI skills complement Data Engineering roles?"
+    expected_categories:
+      - Data Engineering
+      - Data Analytics
+    expected_keywords:
+      - SQL
+      - dashboard
+      - reporting
+      - Tableau
+      - Power BI
+      - data visualization
+      - analytics
+    relevance_note: >
+      Relevant documents should connect the vague follow-up to analytics, BI,
+      reporting, or data engineering contexts.
+
+  - id: follow_up_mlops_deployment
+    conversation_history:
+      - role: user
+        content: "I am interested in Machine Learning Engineer roles."
+      - role: assistant
+        content: "Prioritize Python, ML fundamentals, model evaluation, and production ML practices."
+    query: "What should I learn for deployment?"
+    standalone_query: "What deployment and MLOps skills are useful for Machine Learning Engineer roles?"
+    expected_categories:
+      - AI/ML
+      - DevOps/SRE
+      - Cloud
+    expected_keywords:
+      - MLOps
+      - Docker
+      - Kubernetes
+      - MLflow
+      - CI/CD
+      - cloud
+      - deployment
+      - model
+    relevance_note: >
+      Relevant documents should connect ML work with deployment, production
+      systems, MLOps, cloud, or infrastructure tooling.
