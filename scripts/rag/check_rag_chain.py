@@ -82,6 +82,8 @@ def parse_args() -> argparse.Namespace:
 def print_turn_response(turn_number: int, query: str, response) -> None:
     """Print one conversation turn in a readable terminal format."""
     print(f"\nTurn {turn_number}: {query}")
+    if response.retrieval_query != response.query:
+        print(f"Retrieval query: {response.retrieval_query}")
     print(response.answer)
     print("\nRetrieved documents:")
     for index, document in enumerate(response.documents, start=1):

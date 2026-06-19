@@ -36,7 +36,7 @@ Criteria:
 
 | Query ID                         | Context relevance | Faithfulness | Answer relevance | Notes                                                                                                              |
 | -------------------------------- | ----------------: | -----------: | ---------------: | ------------------------------------------------------------------------------------------------------------------ |
-| `data_engineering_learning_path` |               2/2 |          2/2 |              2/2 | Sources strongly support Python, SQL, AWS/Redshift and data pipeline recommendations.                              |
+| `data_engineering_learning_path` |               2/2 |          1/2 |              2/2 | Sources strongly support Python, SQL, AWS/Redshift and data pipeline recommendations.                              |
 | `devops_platform_skills`         |               2/2 |          2/2 |              2/2 | Sources support Kubernetes, cloud platforms, CI/CD, IaC, monitoring and Azure DevOps.                              |
 | `ai_ml_engineer_skills`          |               2/2 |          1/2 |              1/2 | Sources are relevant, but the answer overstates Docker/Kubernetes/MLOps compared with the retrieved evidence.      |
 | `backend_api_development`        |               2/2 |          2/2 |              2/2 | Automatic retrieval was weak by category, but the retrieved descriptions are useful and the answer stays grounded. |
@@ -47,5 +47,5 @@ Average manual scores:
 | Metric            | Average |
 | ----------------- | ------: |
 | Context relevance |    2.00 |
-| Faithfulness      |    1.80 |
+| Faithfulness      |    1.60 |
 | Answer relevance  |    1.80 |

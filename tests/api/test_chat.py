@@ -64,6 +64,24 @@ class FakeGenerator:
         return "Prioriza Python, deployment y MLOps con evidencia del corpus."
 
 
+class FakeQueryRewriter:
+    """Fake query rewriter for API contract tests."""
+
+    def __init__(self, rewritten_query: str | None = None) -> None:
+        self.rewritten_query = rewritten_query
+        self.calls = []
+
+    def rewrite(self, query: str, conversation_history) -> str:
+        """Return a deterministic retrieval query."""
+        self.calls.append(
+            {
+                "query": query,
+                "conversation_history": list(conversation_history),
+            }
+        )
+        return self.rewritten_query or query
+
+
 class FailingRetriever(FakeRetriever):
     """Fake retriever that simulates unavailable dependencies."""
 
@@ -85,11 +103,13 @@ class FailingRetriever(FakeRetriever):
 def build_fake_chain(
     retriever: FakeRetriever | None = None,
     generator: FakeGenerator | None = None,
+    query_rewriter: FakeQueryRewriter | None = None,
 ) -> JobMarketRagChain:
     """Build a RAG chain with fake dependencies."""
     return JobMarketRagChain(
         retriever=retriever or FakeRetriever(),
         generator=generator or FakeGenerator(),
+        query_rewriter=query_rewriter or FakeQueryRewriter(),
     )
 
 
@@ -128,6 +148,7 @@ def test_chat_returns_answer_and_sources(api_client: TestClient) -> None:
     }
     assert response.json() == {
         "message": "What should I learn for ML Engineer roles?",
+        "retrieval_query": "What should I learn for ML Engineer roles?",
         "answer": "Prioriza Python, deployment y MLOps con evidencia del corpus.",
         "sources": [
             {
@@ -166,8 +187,16 @@ def test_chat_uses_request_history_without_mutating_cached_chain(
     api_client: TestClient,
 ) -> None:
     """Client-provided history should be scoped to the current request only."""
+    retriever = FakeRetriever()
     generator = FakeGenerator()
-    chain = build_fake_chain(generator=generator)
+    query_rewriter = FakeQueryRewriter(
+        rewritten_query="What should come next after Python and SQL for data roles?"
+    )
+    chain = build_fake_chain(
+        retriever=retriever,
+        generator=generator,
+        query_rewriter=query_rewriter,
+    )
     override_chat_chain(chain)
 
     response = api_client.post(
@@ -188,11 +217,16 @@ def test_chat_uses_request_history_without_mutating_cached_chain(
     )
 
     assert response.status_code == 200
+    assert response.json()["retrieval_query"] == (
+        "What should come next after Python and SQL for data roles?"
+    )
+    assert retriever.last_call["query"] == response.json()["retrieval_query"]
     assert generator.last_prompt is not None
     assert "Historial de conversación previo" in generator.last_prompt
     assert "usuario: I know Python and SQL." in generator.last_prompt
     assert "asistente: That is a good foundation for data roles." in generator.last_prompt
     assert chain.memory.messages == []
+    assert len(query_rewriter.calls[0]["conversation_history"]) == 2
 
 
 def test_chat_returns_422_for_blank_message(api_client: TestClient) -> None:

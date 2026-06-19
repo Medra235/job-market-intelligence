@@ -10,6 +10,7 @@ class FakeRetriever:
 
     def __init__(self) -> None:
         self.last_call = None
+        self.calls = []
 
     def retrieve(self, query: str, top_k: int = 5, score_threshold=None):
         """Return one retrieved document and record call arguments."""
@@ -18,6 +19,7 @@ class FakeRetriever:
             "top_k": top_k,
             "score_threshold": score_threshold,
         }
+        self.calls.append(self.last_call)
         return [
             RetrievedDocument(
                 job_id=1,
@@ -52,6 +54,26 @@ class FakeGenerator:
         return self.answers.pop(0)
 
 
+class FakeQueryRewriter:
+    """Fake query rewriter returning deterministic retrieval queries."""
+
+    def __init__(self, rewritten_queries: list[str] | None = None) -> None:
+        self.calls = []
+        self.rewritten_queries = rewritten_queries or []
+
+    def rewrite(self, query: str, conversation_history) -> str:
+        """Record the rewrite inputs and return the next configured query."""
+        self.calls.append(
+            {
+                "query": query,
+                "conversation_history": list(conversation_history),
+            }
+        )
+        if self.rewritten_queries:
+            return self.rewritten_queries.pop(0)
+        return query
+
+
 def test_rag_chain_retrieves_builds_prompt_and_generates_answer() -> None:
     """The chain should connect retriever, prompt builder, and generator."""
     retriever = FakeRetriever()
@@ -77,12 +99,23 @@ def test_rag_chain_retrieves_builds_prompt_and_generates_answer() -> None:
     assert "Data Engineer" in generator.last_call["prompt"]
     assert "What should I learn for Data Engineering?" in generator.last_call["prompt"]
     assert response.answer == "Aprende Python, SQL y Airflow."
+    assert response.query == "What should I learn for Data Engineering?"
+    assert response.retrieval_query == "What should I learn for Data Engineering?"
     assert response.documents[0].title == "Data Engineer"
 
 
 def test_rag_chain_includes_conversation_memory_on_follow_up() -> None:
     """A second answer should reuse earlier turns as conversational context."""
     retriever = FakeRetriever()
+    query_rewriter = FakeQueryRewriter(
+        rewritten_queries=[
+            "What should I learn for Data Engineering?",
+            (
+                "What analytics and BI skills complement Data Engineering "
+                "roles?"
+            ),
+        ]
+    )
     generator = FakeGenerator(
         answers=[
             "Aprende Python, SQL y Airflow.",
@@ -93,6 +126,7 @@ def test_rag_chain_includes_conversation_memory_on_follow_up() -> None:
         retriever=retriever,
         generator=generator,
         memory=ConversationMemory(max_messages=8),
+        query_rewriter=query_rewriter,
         max_context_documents=1,
         max_preview_chars=100,
     )
@@ -102,6 +136,12 @@ def test_rag_chain_includes_conversation_memory_on_follow_up() -> None:
 
     assert first_response.answer == "Aprende Python, SQL y Airflow."
     assert second_response.answer == "También conviene reforzar análisis y reporting."
+    assert second_response.query == "And for the analytics side?"
+    assert (
+        second_response.retrieval_query
+        == "What analytics and BI skills complement Data Engineering roles?"
+    )
+    assert retriever.calls[1]["query"] == second_response.retrieval_query
     assert "Historial de conversación previo" in generator.prompts[1]
     assert "What should I learn for Data Engineering?" in generator.prompts[1]
     assert "Aprende Python, SQL y Airflow." in generator.prompts[1]

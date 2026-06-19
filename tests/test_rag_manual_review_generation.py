@@ -35,6 +35,7 @@ def make_response(query: str = "Question for data_engineering") -> RagResponse:
     return RagResponse(
         answer="Prioriza Python, SQL y Airflow.",
         query=query,
+        retrieval_query=query,
         documents=[document],
         prompt="prompt",
     )
@@ -84,7 +85,14 @@ def test_build_review_markdown_includes_answer_sources_and_score_slots() -> None
 def test_build_review_markdown_shows_rag_query_only_when_different() -> None:
     """Standalone rewritten queries should be visible in the review file."""
     query = make_query("follow_up")
-    response = make_response(query="Standalone retrieval query")
+    response = make_response()
+    response = RagResponse(
+        answer=response.answer,
+        query=query.query,
+        retrieval_query="Standalone retrieval query",
+        documents=response.documents,
+        prompt=response.prompt,
+    )
 
     markdown = build_review_markdown(
         cases=[(query, response)],
