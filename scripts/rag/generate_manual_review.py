@@ -132,7 +132,12 @@ def generate_review_cases(
     cases = []
     for query in queries:
         chain.clear_memory()
-        response = chain.answer(query=query.retrieval_query, top_k=top_k)
+        for message in query.conversation_history:
+            if message["role"] == "user":
+                chain.memory.history.add_user_message(message["content"])
+            else:
+                chain.memory.history.add_ai_message(message["content"])
+        response = chain.answer(query=query.query, top_k=top_k)
         cases.append((query, response))
     return cases
 

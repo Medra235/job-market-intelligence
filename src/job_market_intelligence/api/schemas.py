@@ -179,5 +179,6 @@ class ChatResponse(BaseModel):
     """Generated chatbot answer plus retrieved evidence."""
 
     message: str
+    retrieval_query: str
     answer: str
     sources: list[ChatSourceItem]

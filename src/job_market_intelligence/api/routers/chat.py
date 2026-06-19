@@ -123,6 +123,7 @@ def _with_request_history(
         generator=chain.generator,
         generation_config=chain.generation_config,
         memory=memory,
+        query_rewriter=chain.query_rewriter,
         system_prompt=chain.system_prompt,
         max_context_documents=chain.max_context_documents,
         max_preview_chars=chain.max_preview_chars,
@@ -133,6 +134,7 @@ def _to_api_response(response: RagResponse) -> ChatResponse:
     """Convert the domain RAG response to the API schema."""
     return ChatResponse(
         message=response.query,
+        retrieval_query=response.retrieval_query,
         answer=response.answer,
         sources=[
             ChatSourceItem(

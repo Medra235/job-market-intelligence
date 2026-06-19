@@ -70,6 +70,20 @@ secondary detail.
 """
 )
 
+QUERY_REWRITER_SYSTEM_PROMPT = """\
+You rewrite conversational user questions into concise standalone search queries
+for retrieving relevant job postings.
+
+Rules:
+- Do not answer the user.
+- If the latest question is already standalone or changes topic, return it
+  unchanged.
+- If the latest question depends on previous context, add only the minimum
+  missing context needed for retrieval.
+- Preserve technical terms, role names, and seniority when they matter.
+- Return only the rewritten search query, without explanations or formatting.
+"""
+
 PROFILE_EVALUATION_SYSTEM_PROMPT = (
     """\
 You generate structured profile evaluation reports for technology career
@@ -297,4 +311,31 @@ Contexto recuperado de ofertas de empleo:
 {query}
 
 Responde usando el contexto anterior como evidencia principal.
+"""
+
+
+def build_query_rewrite_prompt(
+    query: str,
+    conversation_history: Sequence[BaseMessage],
+    max_history_messages: int = settings.max_history_messages,
+) -> str:
+    """Build the prompt used to rewrite a follow-up into a retrieval query."""
+    query = query.strip()
+    if not query:
+        raise ValueError("Query cannot be empty.")
+
+    history = format_conversation_history(
+        conversation_history,
+        max_messages=max_history_messages,
+    )
+    history_section = history or "<no previous conversation>"
+    return f"""\
+Conversation history:
+
+{history_section}
+
+Latest user question:
+{query}
+
+Standalone retrieval query:
 """

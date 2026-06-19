@@ -4,11 +4,15 @@ from dataclasses import dataclass
 
 from job_market_intelligence.config.settings import settings
 from job_market_intelligence.rag.generator import GenerationConfig, OllamaGenerator
+from job_market_intelligence.rag.memory import ConversationMemory
 from job_market_intelligence.rag.prompts import (
     CHATBOT_SYSTEM_PROMPT,
     build_rag_prompt,
 )
-from job_market_intelligence.rag.memory import ConversationMemory
+from job_market_intelligence.rag.query_rewriter import (
+    OllamaQueryRewriter,
+    QueryRewriter,
+)
 from job_market_intelligence.rag.retriever import QdrantRetriever, RetrievedDocument
 
 
@@ -18,6 +22,7 @@ class RagResponse:
 
     answer: str
     query: str
+    retrieval_query: str
     documents: list[RetrievedDocument]
     prompt: str
 
@@ -31,6 +36,7 @@ class JobMarketRagChain:
         generator: OllamaGenerator | None = None,
         generation_config: GenerationConfig | None = None,
         memory: ConversationMemory | None = None,
+        query_rewriter: QueryRewriter | None = None,
         system_prompt: str = CHATBOT_SYSTEM_PROMPT,
         max_context_documents: int = settings.max_context_documents,
         max_preview_chars: int = settings.max_preview_chars,
@@ -39,6 +45,10 @@ class JobMarketRagChain:
         self.generator = generator or OllamaGenerator()
         self.generation_config = generation_config or GenerationConfig()
         self.memory = memory or ConversationMemory()
+        self.query_rewriter = query_rewriter or OllamaQueryRewriter(
+            generator=self.generator,
+            max_history_messages=self.memory.max_messages,
+        )
         self.system_prompt = system_prompt
         self.max_context_documents = max_context_documents
         self.max_preview_chars = max_preview_chars
@@ -54,8 +64,12 @@ class JobMarketRagChain:
         if not query:
             raise ValueError("Query cannot be empty.")
 
-        documents = self.retriever.retrieve(
+        retrieval_query = self.query_rewriter.rewrite(
             query=query,
+            conversation_history=self.memory.messages,
+        )
+        documents = self.retriever.retrieve(
+            query=retrieval_query,
             top_k=top_k,
             score_threshold=score_threshold,
         )
@@ -76,6 +90,7 @@ class JobMarketRagChain:
         return RagResponse(
             answer=answer,
             query=query,
+            retrieval_query=retrieval_query,
             documents=documents,
             prompt=prompt,
         )

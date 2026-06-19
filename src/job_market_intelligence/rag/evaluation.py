@@ -1,6 +1,6 @@
 """Shared helpers for RAG evaluation scripts."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import yaml
@@ -28,6 +28,7 @@ class GoldenQuery:
     expected_categories: list[str]
     expected_keywords: list[str]
     standalone_query: str | None = None
+    conversation_history: list[dict[str, str]] = field(default_factory=list)
 
     @property
     def retrieval_query(self) -> str:
@@ -71,6 +72,13 @@ def load_golden_set(path: Path) -> tuple[list[GoldenQuery], int]:
                 expected_keywords=[
                     str(keyword).strip()
                     for keyword in raw_query.get("expected_keywords", [])
+                ],
+                conversation_history=[
+                    {
+                        "role": str(message["role"]).strip(),
+                        "content": str(message["content"]).strip(),
+                    }
+                    for message in raw_query.get("conversation_history", [])
                 ],
             )
         )
@@ -251,8 +259,10 @@ def build_review_markdown(
     for golden_query, response in cases:
         lines.extend([f"## {golden_query.query_id}", "", "### User Query", ""])
         lines.extend([golden_query.query, ""])
-        if response.query != golden_query.query:
-            lines.extend(["### Query Used By RAG", "", response.query, ""])
+        if response.retrieval_query != golden_query.query:
+            lines.extend(
+                ["### Query Used By RAG", "", response.retrieval_query, ""]
+            )
         lines.extend(
             [
                 "### Answer",
