@@ -2,13 +2,13 @@
 
 import pytest
 
-from job_market_intelligence.rag.evaluation import GoldenQuery
-from job_market_intelligence.rag.rag_chain import RagResponse
-from job_market_intelligence.rag.retriever import RetrievedDocument
-from scripts.rag.generate_manual_review import (
+from job_market_intelligence.rag.evaluation import (
+    GoldenQuery,
     build_review_markdown,
     select_queries,
 )
+from job_market_intelligence.rag.rag_chain import RagResponse
+from job_market_intelligence.rag.retriever import RetrievedDocument
 
 
 def make_query(query_id: str) -> GoldenQuery:

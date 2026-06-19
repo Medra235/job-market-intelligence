@@ -7,7 +7,6 @@ Usage example:
 
 import argparse
 import csv
-from dataclasses import dataclass
 from pathlib import Path
 from statistics import mean
 
@@ -15,33 +14,13 @@ from job_market_intelligence.config.settings import settings
 from job_market_intelligence.rag.evaluation import (
     DEFAULT_GOLDEN_SET_PATH,
     GoldenQuery,
+    QueryEvaluation,
+    calculate_metrics,
     load_golden_set,
 )
-from job_market_intelligence.rag.retriever import QdrantRetriever, RetrievedDocument
+from job_market_intelligence.rag.retriever import QdrantRetriever
 
 DEFAULT_METRICS_OUTPUT_PATH = Path("reports/rag/retrieval_metrics.csv")
-
-
-@dataclass(frozen=True)
-class RelevanceMatch:
-    """Rule-based relevance decision for a retrieved document."""
-
-    is_relevant: bool
-    category_match: bool
-    matched_keywords: list[str]
-
-
-@dataclass(frozen=True)
-class QueryEvaluation:
-    """Retrieval metrics for one query."""
-
-    golden_query: GoldenQuery
-    top_k: int
-    returned_count: int
-    relevant_count: int
-    precision_at_k: float
-    hit_at_k: int
-    mrr_at_k: float
 
 
 def parse_args() -> argparse.Namespace:
@@ -92,74 +71,6 @@ def parse_args() -> argparse.Namespace:
         help="CSV output path for query-level metrics.",
     )
     return parser.parse_args()
-
-
-def normalize_text(text: str) -> str:
-    """Normalize text for simple case-insensitive matching."""
-    return " ".join(text.casefold().split())
-
-
-def evaluate_document_relevance(
-    document: RetrievedDocument,
-    expected_categories: list[str],
-    expected_keywords: list[str],
-) -> RelevanceMatch:
-    """Evaluate document relevance with category and keyword proxy signals."""
-    normalized_categories = {
-        normalize_text(category) for category in expected_categories if category
-    }
-    category_match = normalize_text(document.job_category) in normalized_categories
-
-    searchable_text = normalize_text(
-        " ".join(
-            [
-                document.title,
-                document.job_category,
-                document.description,
-                document.description_preview,
-            ]
-        )
-    )
-    matched_keywords = [
-        keyword
-        for keyword in expected_keywords
-        if keyword and normalize_text(keyword) in searchable_text
-    ]
-    return RelevanceMatch(
-        is_relevant=category_match or bool(matched_keywords),
-        category_match=category_match,
-        matched_keywords=matched_keywords,
-    )
-
-
-def calculate_metrics(
-    golden_query: GoldenQuery,
-    retrieved_documents: list[RetrievedDocument],
-    top_k: int,
-) -> QueryEvaluation:
-    """Calculate Precision@k, Hit@k, and MRR@k for one query."""
-    if top_k <= 0:
-        raise ValueError("top_k must be greater than 0.")
-
-    relevant_ranks = [
-        rank
-        for rank, document in enumerate(retrieved_documents[:top_k], start=1)
-        if evaluate_document_relevance(
-            document=document,
-            expected_categories=golden_query.expected_categories,
-            expected_keywords=golden_query.expected_keywords,
-        ).is_relevant
-    ]
-    relevant_count = len(relevant_ranks)
-    return QueryEvaluation(
-        golden_query=golden_query,
-        top_k=top_k,
-        returned_count=len(retrieved_documents[:top_k]),
-        relevant_count=relevant_count,
-        precision_at_k=relevant_count / top_k,
-        hit_at_k=int(bool(relevant_ranks)),
-        mrr_at_k=(1 / relevant_ranks[0]) if relevant_ranks else 0.0,
-    )
 
 
 def evaluate_queries(

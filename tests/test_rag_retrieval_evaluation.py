@@ -4,12 +4,13 @@ from pathlib import Path
 
 import pytest
 
-from job_market_intelligence.rag.evaluation import GoldenQuery, load_golden_set
-from job_market_intelligence.rag.retriever import RetrievedDocument
-from scripts.rag.evaluate_retrieval import (
+from job_market_intelligence.rag.evaluation import (
+    GoldenQuery,
     calculate_metrics,
     evaluate_document_relevance,
+    load_golden_set,
 )
+from job_market_intelligence.rag.retriever import RetrievedDocument
 
 
 def make_document(

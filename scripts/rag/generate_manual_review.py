@@ -13,20 +13,15 @@ from job_market_intelligence.config.settings import settings
 from job_market_intelligence.rag.evaluation import (
     DEFAULT_GOLDEN_SET_PATH,
     GoldenQuery,
+    build_review_markdown,
     load_golden_set,
+    select_queries,
 )
 from job_market_intelligence.rag.generator import GenerationConfig, OllamaGenerator
 from job_market_intelligence.rag.rag_chain import JobMarketRagChain, RagResponse
-from job_market_intelligence.rag.retriever import QdrantRetriever, RetrievedDocument
+from job_market_intelligence.rag.retriever import QdrantRetriever
 
 DEFAULT_OUTPUT_PATH = Path("reports/rag/manual_generation_review.md")
-DEFAULT_REVIEW_QUERY_IDS = [
-    "data_engineering_learning_path",
-    "devops_platform_skills",
-    "ai_ml_engineer_skills",
-    "backend_api_development",
-    "follow_up_mlops_deployment",
-]
 
 
 def parse_args() -> argparse.Namespace:
@@ -107,39 +102,6 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def select_queries(
-    queries: list[GoldenQuery],
-    requested_ids: list[str] | None = None,
-    include_all: bool = False,
-    limit: int | None = None,
-) -> list[GoldenQuery]:
-    """Select golden-set queries for manual review."""
-    query_by_id = {query.query_id: query for query in queries}
-    requested_ids = requested_ids or []
-
-    if requested_ids:
-        missing_ids = [query_id for query_id in requested_ids if query_id not in query_by_id]
-        if missing_ids:
-            raise ValueError(f"Unknown golden-set query id(s): {', '.join(missing_ids)}")
-        selected = [query_by_id[query_id] for query_id in requested_ids]
-    elif include_all:
-        selected = queries
-    else:
-        selected = [
-            query_by_id[query_id]
-            for query_id in DEFAULT_REVIEW_QUERY_IDS
-            if query_id in query_by_id
-        ]
-
-    if limit is not None:
-        if limit <= 0:
-            raise ValueError("limit must be greater than 0.")
-        selected = selected[:limit]
-    if not selected:
-        raise ValueError("No golden-set queries selected.")
-    return selected
-
-
 def build_rag_chain(args: argparse.Namespace) -> JobMarketRagChain:
     """Build the current Ollama-backed RAG chain used for manual review."""
     retriever = QdrantRetriever(
@@ -159,78 +121,6 @@ def build_rag_chain(args: argparse.Namespace) -> JobMarketRagChain:
         max_context_documents=args.max_context_documents,
         max_preview_chars=settings.max_preview_chars,
     )
-
-
-def format_sources(documents: list[RetrievedDocument]) -> str:
-    """Format retrieved sources for manual review."""
-    if not documents:
-        return "No retrieved sources."
-
-    sections = []
-    for index, document in enumerate(documents, start=1):
-        description = document.description or document.description_preview or ""
-        sections.append(
-            "\n".join(
-                [
-                    f"{index}. **{document.title or '<missing title>'}**",
-                    f"   - Category: {document.job_category or '<missing>'}",
-                    f"   - Score: {document.score:.4f}",
-                    f"   - Job ID: {document.job_id or '<missing>'}",
-                    "   - Description:",
-                    "",
-                    f"     {description.strip() or '<missing description>'}",
-                ]
-            )
-        )
-    return "\n\n".join(sections)
-
-
-def build_review_markdown(
-    cases: list[tuple[GoldenQuery, RagResponse]],
-    top_k: int,
-    llm_model: str,
-) -> str:
-    """Build the Markdown review file from generated RAG responses."""
-    lines = [
-        "# RAG Manual Generation Review",
-        "",
-        f"- LLM model: `{llm_model}`",
-        f"- Retrieval top_k: `{top_k}`",
-        "- Scores: `0 = poor`, `1 = partial`, `2 = good`",
-        "",
-        "Manual criteria:",
-        "",
-        "- Context relevance: retrieved sources contain useful evidence for the query.",
-        "- Faithfulness: the answer is supported by the retrieved sources.",
-        "- Answer relevance: the answer directly addresses the user's goal.",
-        "",
-    ]
-
-    for golden_query, response in cases:
-        lines.extend([f"## {golden_query.query_id}", "", "### User Query", ""])
-        lines.extend([golden_query.query, ""])
-        if response.query != golden_query.query:
-            lines.extend(["### Query Used By RAG", "", response.query, ""])
-        lines.extend(
-            [
-                "### Answer",
-                "",
-                response.answer,
-                "",
-                "### Retrieved Sources",
-                "",
-                format_sources(response.documents),
-                "",
-                "### Manual Scores",
-                "",
-                "- Context relevance: _/2",
-                "- Faithfulness: _/2",
-                "- Answer relevance: _/2",
-                "",
-            ]
-        )
-
-    return "\n".join(lines)
 
 
 def generate_review_cases(
