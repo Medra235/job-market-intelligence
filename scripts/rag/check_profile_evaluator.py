@@ -5,9 +5,14 @@ Usage example:
 """
 
 import argparse
+
 from job_market_intelligence.config.settings import settings
 from job_market_intelligence.models.profile_classifier import JobCategoryClassifier
-from job_market_intelligence.rag.generator import GenerationConfig, OllamaGenerator
+from job_market_intelligence.rag.generator import (
+    GenerationConfig,
+    LlamaCppGenerator,
+    TextGenerator,
+)
 from job_market_intelligence.rag.profile_evaluator import ProfileEvaluator
 from job_market_intelligence.rag.retriever import QdrantRetriever
 
@@ -37,8 +42,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--llm-model",
-        default=settings.ollama_model,
-        help="Ollama model name.",
+        default=None,
+        help="llama.cpp model name. Defaults to the configured model.",
     )
     parser.add_argument(
         "--qdrant-url",
@@ -46,9 +51,9 @@ def parse_args() -> argparse.Namespace:
         help="Qdrant base URL.",
     )
     parser.add_argument(
-        "--ollama-url",
-        default=settings.ollama_url,
-        help="Ollama base URL.",
+        "--llamacpp-url",
+        default=settings.llamacpp_url,
+        help="llama.cpp server base URL.",
     )
     parser.add_argument(
         "--local-files-only",
@@ -68,7 +73,7 @@ def parse_args() -> argparse.Namespace:
         help="Maximum characters per retrieved description preview.",
     )
     parser.add_argument(
-        "--num-predict",
+        "--max-tokens",
         type=int,
         default=1024,
         help="Maximum generated tokens.",
@@ -86,6 +91,15 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def build_generator(args: argparse.Namespace) -> TextGenerator:
+    """Build the local llama.cpp generator for the smoke test."""
+    model_name = args.llm_model or settings.llamacpp_model
+    return LlamaCppGenerator(
+        model_name=model_name,
+        base_url=args.llamacpp_url,
+    )
+
+
 def main() -> None:
     """Run one profile evaluation request."""
     args = parse_args()
@@ -95,10 +109,7 @@ def main() -> None:
         qdrant_url=args.qdrant_url,
         local_files_only=args.local_files_only,
     )
-    generator = OllamaGenerator(
-        model_name=args.llm_model,
-        base_url=args.ollama_url,
-    )
+    generator = build_generator(args)
     category_classifier = (
         JobCategoryClassifier(model_type=args.classifier_model_type)
         if args.use_classifier
@@ -108,7 +119,7 @@ def main() -> None:
         retriever=retriever,
         generator=generator,
         category_classifier=category_classifier,
-        generation_config=GenerationConfig(num_predict=args.num_predict),
+        generation_config=GenerationConfig(max_tokens=args.max_tokens),
         max_context_documents=args.max_context_documents,
         max_preview_chars=args.max_preview_chars,
     )

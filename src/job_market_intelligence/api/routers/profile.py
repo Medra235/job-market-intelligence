@@ -40,8 +40,8 @@ async def get_profile_evaluator(request: Request) -> ProfileEvaluator:
         request.app.state.profile_evaluator_error = error
         detail = (
             "Profile evaluator is not available. "
-            "Check that Qdrant and Ollama are running and that local model "
-            "artifacts are available."
+            "Check that Qdrant and llama.cpp server are running "
+            "and that local model artifacts are available."
         )
         detail = f"{detail} Startup error: {error}"
         raise HTTPException(
@@ -81,7 +81,7 @@ async def evaluate_profile(
     try:
         response = evaluator.evaluate(
             profile_text=request.profile_text,
-            top_k=request.top_k or settings.profile_top_k,
+            top_k=request.top_k or settings.max_context_documents,
             include_category_prediction=True,
         )
     except ValueError as error:
@@ -99,8 +99,8 @@ async def evaluate_profile(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=(
                 "Profile evaluation dependencies are not available. "
-                "Check that Qdrant and Ollama are running and that local model "
-                "artifacts are available."
+                "Check that Qdrant and llama.cpp server are running "
+                "and that local model artifacts are available."
             ),
         ) from error
 

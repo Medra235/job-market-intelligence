@@ -129,10 +129,10 @@ def test_profile_evaluate_returns_response_with_test_client(
 def test_profile_evaluate_uses_configured_default_top_k(
     api_client: TestClient,
 ) -> None:
-    """The endpoint should use settings.profile_top_k when top_k is omitted."""
+    """The endpoint should use settings.max_context_documents when top_k is omitted."""
     evaluator = FakeProfileEvaluator()
     override_profile_evaluator(evaluator)
-    app.dependency_overrides[get_settings] = lambda: Settings(profile_top_k=7)
+    app.dependency_overrides[get_settings] = lambda: Settings(max_context_documents=7)
 
     response = api_client.post(
         "/profile/evaluate",
@@ -164,11 +164,15 @@ def test_profile_evaluate_returns_422_for_blank_profile(
     [
         (ValueError("top_k must be greater than 0."), 400, "top_k must be greater"),
         (
-            RuntimeError("Could not generate a response with Ollama."),
+            RuntimeError("Could not generate a response with llama.cpp."),
             503,
-            "Could not generate a response with Ollama.",
+            "Could not generate a response with llama.cpp.",
         ),
-        (ConnectionError("Qdrant is unavailable."), 503, "Qdrant and Ollama"),
+        (
+            ConnectionError("Qdrant is unavailable."),
+            503,
+            "llama.cpp server",
+        ),
     ],
 )
 def test_profile_evaluate_maps_domain_errors(

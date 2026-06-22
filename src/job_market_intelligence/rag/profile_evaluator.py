@@ -3,8 +3,15 @@
 from dataclasses import dataclass
 
 from job_market_intelligence.config.settings import settings
-from job_market_intelligence.models.profile_classifier import CategoryPrediction, JobCategoryClassifier
-from job_market_intelligence.rag.generator import GenerationConfig, OllamaGenerator
+from job_market_intelligence.models.profile_classifier import (
+    CategoryPrediction,
+    JobCategoryClassifier,
+)
+from job_market_intelligence.rag.generator import (
+    GenerationConfig,
+    LlamaCppGenerator,
+    TextGenerator,
+)
 from job_market_intelligence.rag.prompts import (
     PROFILE_EVALUATION_SYSTEM_PROMPT,
     build_profile_evaluation_prompt,
@@ -36,7 +43,7 @@ class ProfileEvaluator:
     def __init__(
         self,
         retriever: QdrantRetriever | None = None,
-        generator: OllamaGenerator | None = None,
+        generator: TextGenerator | None = None,
         category_classifier: JobCategoryClassifier | None = None,
         generation_config: GenerationConfig | None = None,
         system_prompt: str = PROFILE_EVALUATION_SYSTEM_PROMPT,
@@ -44,9 +51,11 @@ class ProfileEvaluator:
         max_preview_chars: int = settings.max_preview_chars,
     ) -> None:
         self.retriever = retriever or QdrantRetriever()
-        self.generator = generator or OllamaGenerator()
+        self.generator = generator or LlamaCppGenerator()
         self.category_classifier = category_classifier
-        self.generation_config = generation_config or GenerationConfig(num_predict=1024)
+        self.generation_config = generation_config or GenerationConfig(
+            max_tokens=settings.profile_max_tokens
+        )
         self.system_prompt = system_prompt
         self.max_context_documents = max_context_documents
         self.max_preview_chars = max_preview_chars

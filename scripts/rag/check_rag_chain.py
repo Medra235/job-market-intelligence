@@ -6,8 +6,13 @@ Usage example:
 """
 
 import argparse
+
 from job_market_intelligence.config.settings import settings
-from job_market_intelligence.rag.generator import GenerationConfig, OllamaGenerator
+from job_market_intelligence.rag.generator import (
+    GenerationConfig,
+    LlamaCppGenerator,
+    TextGenerator,
+)
 from job_market_intelligence.rag.rag_chain import JobMarketRagChain
 from job_market_intelligence.rag.retriever import QdrantRetriever
 
@@ -40,8 +45,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--llm-model",
-        default=settings.ollama_model,
-        help="Ollama model name.",
+        default=None,
+        help="llama.cpp model name. Defaults to the configured model.",
     )
     parser.add_argument(
         "--qdrant-url",
@@ -49,9 +54,9 @@ def parse_args() -> argparse.Namespace:
         help="Qdrant base URL.",
     )
     parser.add_argument(
-        "--ollama-url",
-        default=settings.ollama_url,
-        help="Ollama base URL.",
+        "--llamacpp-url",
+        default=settings.llamacpp_url,
+        help="llama.cpp server base URL.",
     )
     parser.add_argument(
         "--local-files-only",
@@ -71,12 +76,21 @@ def parse_args() -> argparse.Namespace:
         help="Maximum characters per retrieved description preview.",
     )
     parser.add_argument(
-        "--num-predict",
+        "--max-tokens",
         type=int,
         default=1536,
         help="Maximum generated tokens.",
     )
     return parser.parse_args()
+
+
+def build_generator(args: argparse.Namespace) -> TextGenerator:
+    """Build the local llama.cpp generator for the smoke test."""
+    model_name = args.llm_model or settings.llamacpp_model
+    return LlamaCppGenerator(
+        model_name=model_name,
+        base_url=args.llamacpp_url,
+    )
 
 
 def print_turn_response(turn_number: int, query: str, response) -> None:
@@ -91,7 +105,9 @@ def print_turn_response(turn_number: int, query: str, response) -> None:
             document.description or document.description_preview or "<missing>"
         )
         if len(description) > DEFAULT_DESCRIPTION_PREVIEW_CHARS:
-            description = f"{description[:DEFAULT_DESCRIPTION_PREVIEW_CHARS].rstrip()}..."
+            description = (
+                f"{description[:DEFAULT_DESCRIPTION_PREVIEW_CHARS].rstrip()}..."
+            )
         print(
             f"{index}. score={document.score:.4f} | "
             f"{document.title} | {document.job_category} | job_id={document.job_id}"
@@ -108,14 +124,11 @@ def main() -> None:
         qdrant_url=args.qdrant_url,
         local_files_only=args.local_files_only,
     )
-    generator = OllamaGenerator(
-        model_name=args.llm_model,
-        base_url=args.ollama_url,
-    )
+    generator = build_generator(args)
     chain = JobMarketRagChain(
         retriever=retriever,
         generator=generator,
-        generation_config=GenerationConfig(num_predict=args.num_predict),
+        generation_config=GenerationConfig(max_tokens=args.max_tokens),
         max_context_documents=args.max_context_documents,
         max_preview_chars=args.max_preview_chars,
     )

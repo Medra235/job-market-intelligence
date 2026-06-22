@@ -1,15 +1,16 @@
-"""Run a manual generation check against a local Ollama model.
+"""Run a manual generation check against a local LLM backend.
 
 Usage examples:
     uv run python scripts/rag/check_generation.py --prompt "Give me three Data Engineering skills."
-    uv run python scripts/rag/check_generation.py --prompt "Summarize MLOps in one paragraph." --num-predict 256
+    uv run python scripts/rag/check_generation.py --prompt "Summarize MLOps in one paragraph." --max-tokens 256
 """
 
 import argparse
+
 from job_market_intelligence.config.settings import settings
 from job_market_intelligence.rag.generator import (
     GenerationConfig,
-    generate_answer,
+    LlamaCppGenerator,
 )
 
 
@@ -19,7 +20,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--prompt",
         required=True,
-        help="User prompt to send to the local Ollama model.",
+        help="User prompt to send to the local LLM backend.",
     )
     parser.add_argument(
         "--system-prompt",
@@ -28,13 +29,13 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--model-name",
-        default=settings.ollama_model,
-        help="Ollama model name to use.",
+        default=None,
+        help="llama.cpp model name to use.",
     )
     parser.add_argument(
-        "--ollama-url",
-        default=settings.ollama_url,
-        help="Ollama base URL.",
+        "--llamacpp-url",
+        default=settings.llamacpp_url,
+        help="llama.cpp server base URL.",
     )
     parser.add_argument(
         "--temperature",
@@ -49,15 +50,10 @@ def parse_args() -> argparse.Namespace:
         help="Nucleus sampling parameter.",
     )
     parser.add_argument(
-        "--num-predict",
+        "--max-tokens",
         type=int,
         default=512,
         help="Maximum number of generated tokens.",
-    )
-    parser.add_argument(
-        "--think",
-        action="store_true",
-        help="Enable separate thinking output for models that support it.",
     )
     return parser.parse_args()
 
@@ -65,17 +61,16 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     """Run one local generation request."""
     args = parse_args()
+    model_name = args.model_name or settings.llamacpp_model
     config = GenerationConfig(
         temperature=args.temperature,
         top_p=args.top_p,
-        num_predict=args.num_predict,
-        think=args.think,
+        max_tokens=args.max_tokens,
     )
-    answer = generate_answer(
+    generator = LlamaCppGenerator(model_name=model_name, base_url=args.llamacpp_url)
+    answer = generator.generate(
         prompt=args.prompt,
         system_prompt=args.system_prompt,
-        model_name=args.model_name,
-        base_url=args.ollama_url,
         config=config,
     )
     print(answer)

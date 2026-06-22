@@ -2,7 +2,7 @@
 
 from langchain_core.chat_history import InMemoryChatMessageHistory
 
-from job_market_intelligence.rag.query_rewriter import OllamaQueryRewriter
+from job_market_intelligence.rag.query_rewriter import LlmQueryRewriter
 
 
 class FakeRewriteGenerator:
@@ -38,7 +38,7 @@ def make_history():
 def test_query_rewriter_skips_llm_without_history() -> None:
     """Standalone first turns should use the original query directly."""
     generator = FakeRewriteGenerator(answer="rewritten")
-    rewriter = OllamaQueryRewriter(generator=generator)
+    rewriter = LlmQueryRewriter(generator=generator)
 
     rewritten_query = rewriter.rewrite(
         query="What skills should I learn for Data Engineering?",
@@ -57,7 +57,7 @@ def test_query_rewriter_returns_clean_standalone_query() -> None:
             "are useful for Machine Learning Engineer roles?"
         )
     )
-    rewriter = OllamaQueryRewriter(generator=generator)
+    rewriter = LlmQueryRewriter(generator=generator)
 
     rewritten_query = rewriter.rewrite(
         query="What should I learn for deployment?",
@@ -77,8 +77,8 @@ def test_query_rewriter_returns_clean_standalone_query() -> None:
 
 def test_query_rewriter_falls_back_to_original_query_on_generation_error() -> None:
     """Generation errors should not make the RAG chain unavailable."""
-    generator = FakeRewriteGenerator(error=RuntimeError("Ollama unavailable"))
-    rewriter = OllamaQueryRewriter(generator=generator)
+    generator = FakeRewriteGenerator(error=RuntimeError("llama.cpp unavailable"))
+    rewriter = LlmQueryRewriter(generator=generator)
 
     rewritten_query = rewriter.rewrite(
         query="What should I learn for deployment?",

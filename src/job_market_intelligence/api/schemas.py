@@ -63,7 +63,7 @@ class ProfileEvaluationRequest(BaseModel):
         default=None,
         ge=1,
         le=10,
-        description="Optional retrieval size. If omitted, the API uses settings.profile_top_k.",
+        description="Optional retrieval size. If omitted, the API uses the profile default.",
     )
 
     @field_validator("profile_text")
@@ -149,8 +149,7 @@ class ChatRequest(BaseModel):
         ge=1,
         le=10,
         description=(
-            "Optional retrieval size. If omitted, the API uses "
-            "settings.max_context_documents."
+            "Optional retrieval size. If omitted, the API uses the RAG context default."
         ),
     )
 

@@ -3,14 +3,18 @@
 from dataclasses import dataclass
 
 from job_market_intelligence.config.settings import settings
-from job_market_intelligence.rag.generator import GenerationConfig, OllamaGenerator
+from job_market_intelligence.rag.generator import (
+    GenerationConfig,
+    LlamaCppGenerator,
+    TextGenerator,
+)
 from job_market_intelligence.rag.memory import ConversationMemory
 from job_market_intelligence.rag.prompts import (
     CHATBOT_SYSTEM_PROMPT,
     build_rag_prompt,
 )
 from job_market_intelligence.rag.query_rewriter import (
-    OllamaQueryRewriter,
+    LlmQueryRewriter,
     QueryRewriter,
 )
 from job_market_intelligence.rag.retriever import QdrantRetriever, RetrievedDocument
@@ -33,7 +37,7 @@ class JobMarketRagChain:
     def __init__(
         self,
         retriever: QdrantRetriever | None = None,
-        generator: OllamaGenerator | None = None,
+        generator: TextGenerator | None = None,
         generation_config: GenerationConfig | None = None,
         memory: ConversationMemory | None = None,
         query_rewriter: QueryRewriter | None = None,
@@ -42,10 +46,10 @@ class JobMarketRagChain:
         max_preview_chars: int = settings.max_preview_chars,
     ) -> None:
         self.retriever = retriever or QdrantRetriever()
-        self.generator = generator or OllamaGenerator()
+        self.generator = generator or LlamaCppGenerator()
         self.generation_config = generation_config or GenerationConfig()
         self.memory = memory or ConversationMemory()
-        self.query_rewriter = query_rewriter or OllamaQueryRewriter(
+        self.query_rewriter = query_rewriter or LlmQueryRewriter(
             generator=self.generator,
             max_history_messages=self.memory.max_messages,
         )
