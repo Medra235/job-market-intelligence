@@ -49,8 +49,8 @@ async def get_chat_rag_chain(request: Request) -> JobMarketRagChain:
         request.app.state.chat_rag_chain_error = error
         detail = (
             "RAG chatbot is not available. "
-            "Check that Qdrant and Ollama are running and that embedding "
-            "artifacts are available."
+            "Check that Qdrant and llama.cpp server are running "
+            "and that embedding artifacts are available."
         )
         detail = f"{detail} Startup error: {error}"
         raise HTTPException(
@@ -98,7 +98,7 @@ async def chat_with_rag(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=(
                 "RAG chatbot dependencies are not available. "
-                "Check that Qdrant and Ollama are running."
+                "Check that Qdrant and llama.cpp server are running."
             ),
         ) from error
 

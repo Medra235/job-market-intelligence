@@ -7,7 +7,7 @@ from typing import Protocol
 from langchain_core.messages import BaseMessage
 
 from job_market_intelligence.config.settings import settings
-from job_market_intelligence.rag.generator import GenerationConfig, OllamaGenerator
+from job_market_intelligence.rag.generator import GenerationConfig, TextGenerator
 from job_market_intelligence.rag.prompts import (
     QUERY_REWRITER_SYSTEM_PROMPT,
     build_query_rewrite_prompt,
@@ -28,16 +28,15 @@ class QueryRewriter(Protocol):
 
 
 @dataclass
-class OllamaQueryRewriter:
+class LlmQueryRewriter:
     """LLM-backed query rewriter with conservative fallback behavior."""
 
-    generator: OllamaGenerator
+    generator: TextGenerator
     config: GenerationConfig = field(
         default_factory=lambda: GenerationConfig(
             temperature=0.0,
             top_p=1.0,
-            num_predict=128,
-            think=False,
+            max_tokens=128,
         )
     )
     system_prompt: str = QUERY_REWRITER_SYSTEM_PROMPT

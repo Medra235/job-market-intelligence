@@ -1,7 +1,7 @@
-"""Local LLM generation utilities backed by Ollama."""
+"""Local LLM generation utilities backed by llama.cpp."""
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Protocol
 
 import httpx
 
@@ -10,32 +10,47 @@ from job_market_intelligence.config.settings import settings
 
 @dataclass(frozen=True)
 class GenerationConfig:
-    """Generation settings sent to the local Ollama model."""
+    """Generation settings shared by local LLM backends."""
 
     temperature: float = 0.2
     top_p: float = 0.9
-    num_predict: int = 512
-    think: bool | str | None = False
+    max_tokens: int = 512
     extra_options: dict[str, Any] = field(default_factory=dict)
 
-    def to_ollama_options(self) -> dict[str, Any]:
-        """Return options using Ollama's expected request keys."""
-        return {
+    def to_llamacpp_options(self) -> dict[str, Any]:
+        """Return options using llama.cpp's OpenAI-compatible request keys."""
+        options = {
             "temperature": self.temperature,
             "top_p": self.top_p,
-            "num_predict": self.num_predict,
+            "max_tokens": self.max_tokens,
             **self.extra_options,
         }
+        chat_template_kwargs = dict(options.get("chat_template_kwargs", {}))
+        chat_template_kwargs["enable_thinking"] = False
+        options["chat_template_kwargs"] = chat_template_kwargs
+        return options
 
 
-class OllamaGenerator:
-    """Small Ollama client for single-turn text generation."""
+class TextGenerator(Protocol):
+    """Interface implemented by local LLM text generation adapters."""
+
+    def generate(
+        self,
+        prompt: str,
+        system_prompt: str | None = None,
+        config: GenerationConfig | None = None,
+    ) -> str:
+        """Generate a response for one prompt."""
+
+
+class LlamaCppGenerator:
+    """Small llama.cpp server client using the OpenAI-compatible chat endpoint."""
 
     def __init__(
         self,
-        model_name: str = settings.ollama_model,
-        base_url: str = settings.ollama_url,
-        timeout_seconds: float = settings.ollama_timeout_seconds,
+        model_name: str = settings.llamacpp_model,
+        base_url: str = settings.llamacpp_url,
+        timeout_seconds: float = settings.llamacpp_timeout_seconds,
         client: httpx.Client | None = None,
     ) -> None:
         self.model_name = model_name
@@ -48,7 +63,7 @@ class OllamaGenerator:
         system_prompt: str | None = None,
         config: GenerationConfig | None = None,
     ) -> str:
-        """Generate a response for one prompt using Ollama's chat endpoint."""
+        """Generate a response for one prompt using llama.cpp's chat endpoint."""
         prompt = prompt.strip()
         if not prompt:
             raise ValueError("Prompt cannot be empty.")
@@ -63,42 +78,39 @@ class OllamaGenerator:
             "model": self.model_name,
             "messages": messages,
             "stream": False,
-            "options": request_config.to_ollama_options(),
+            **request_config.to_llamacpp_options(),
         }
-        if request_config.think is not None:
-            payload["think"] = request_config.think
 
         try:
-            response = self.client.post(f"{self.base_url}/api/chat", json=payload)
+            response = self.client.post(
+                f"{self.base_url}/v1/chat/completions",
+                json=payload,
+            )
             response.raise_for_status()
         except httpx.HTTPError as exc:
             raise RuntimeError(
-                "Could not generate a response with Ollama. "
-                "Check that Ollama is running and the model is available locally."
+                "Could not generate a response with llama.cpp. "
+                "Check that llama.cpp server is running and the GGUF model is loaded."
             ) from exc
 
         data = response.json()
-        message = data.get("message", {})
+        choices = data.get("choices") or []
+        message = choices[0].get("message", {}) if choices else {}
         content = message.get("content", "")
         if not content:
-            if message.get("thinking"):
-                raise RuntimeError(
-                    "Ollama returned thinking output but no final answer. "
-                    "Try disabling thinking for this model."
-                )
-            raise RuntimeError("Ollama returned an empty response.")
+            raise RuntimeError("llama.cpp returned an empty response.")
         return content.strip()
 
 
 def generate_answer(
     prompt: str,
     system_prompt: str | None = None,
-    model_name: str = settings.ollama_model,
-    base_url: str = settings.ollama_url,
+    model_name: str = settings.llamacpp_model,
+    base_url: str = settings.llamacpp_url,
     config: GenerationConfig | None = None,
 ) -> str:
-    """Convenience function for one-off Ollama generation calls."""
-    generator = OllamaGenerator(model_name=model_name, base_url=base_url)
+    """Convenience function for one-off llama.cpp generation calls."""
+    generator = LlamaCppGenerator(model_name=model_name, base_url=base_url)
     return generator.generate(
         prompt=prompt,
         system_prompt=system_prompt,

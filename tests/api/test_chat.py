@@ -260,7 +260,7 @@ def test_chat_returns_422_for_blank_history_message(api_client: TestClient) -> N
     [
         (ValueError("bad query"), 400, "bad query"),
         (RuntimeError("Could not reach Qdrant."), 503, "Could not reach Qdrant."),
-        (ConnectionError("down"), 503, "Qdrant and Ollama"),
+        (ConnectionError("down"), 503, "llama.cpp server"),
     ],
 )
 def test_chat_maps_domain_errors(
