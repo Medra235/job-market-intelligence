@@ -7,13 +7,27 @@ services:
       - "8000:8000"
     environment:
       JMI_QDRANT_URL: http://qdrant:6333
+      JMI_LLAMACPP_URL: http://llamacpp:8080
+      JMI_LLAMACPP_MODEL: gemma-26b
+      JMI_EMBEDDING_MODEL: /app/models/embeddings/all-MiniLM-L6-v2
+      JMI_EMBEDDING_LOCAL_FILES_ONLY: "true"
     volumes:
       - type: bind
         source: ./data/processed
         target: /app/data/processed
         read_only: true
+      - type: bind
+        source: ./models/embeddings
+        target: /app/models/embeddings
+        read_only: true
+      - type: bind
+        source: ./models/random_forest
+        target: /app/models/random_forest
+        read_only: true
     depends_on:
       qdrant:
+        condition: service_healthy
+      llamacpp:
         condition: service_healthy
     healthcheck:
       test:
@@ -28,8 +42,43 @@ services:
       retries: 5
       start_period: 10s
 
+  streamlit:
+    image: job-market-intelligence-api
+    command: >
+      streamlit run
+      src/job_market_intelligence/frontend/streamlit_app.py
+      --server.address 0.0.0.0
+      --server.port 8501
+    ports:
+      - "8501:8501"
+    environment:
+      JMI_API_BASE_URL: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+
+  llamacpp:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda-b9765@sha256:44cd08334f85c1fcb363e3798302f2986cdb78cdfc8c1cf56bdad44041595a32
+    ports:
+      - "8080:8080"
+    gpus: all
+    volumes:
+      - type: bind
+        source: ./models/llamacpp
+        target: /models/llamacpp
+        read_only: true
+    command: >
+      --model /models/llamacpp/gemma-4-26B-A4B-it-qat-UD-Q4_K_XL.gguf
+      --alias gemma-26b
+      --ctx-size 8192
+      --n-gpu-layers all
+      --flash-attn on
+      --host 0.0.0.0
+      --port 8080
+      --parallel 1
+
   qdrant:
-    image: qdrant/qdrant
+    image: qdrant/qdrant:v1.17.1@sha256:94728574965d17c6485dd361aa3c0818b325b9016dac5ea6afec7b4b2700865f
     ports:
       - "6333:6333"
       - "6334:6334"

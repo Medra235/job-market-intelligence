@@ -1,0 +1,37 @@
+[llamacpp]
+image = "ghcr.io/ggml-org/llama.cpp:server-cuda-b9765@sha256:44cd08334f85c1fcb363e3798302f2986cdb78cdfc8c1cf56bdad44041595a32"
+repo_id = "unsloth/gemma-4-26B-A4B-it-qat-GGUF"
+revision = "02749a7b272109255a4c559a80894d3d9777574c"
+filename = "gemma-4-26B-A4B-it-qat-UD-Q4_K_XL.gguf"
+sha256 = "dcf179a91153e3a7ece792e48ef872180d9d6ef9b7677f0a0bd3e83cfe624d5e"
+local_dir = "models/llamacpp"
+alias = "gemma-26b"
+
+[embeddings]
+repo_id = "sentence-transformers/all-MiniLM-L6-v2"
+revision = "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+local_dir = "models/embeddings/all-MiniLM-L6-v2"
+files = [
+    "1_Pooling/config.json",
+    "config.json",
+    "config_sentence_transformers.json",
+    "model.safetensors",
+    "modules.json",
+    "sentence_bert_config.json",
+    "special_tokens_map.json",
+    "tokenizer.json",
+    "tokenizer_config.json",
+    "vocab.txt",
+]
+
+[classifier]
+model_type = "random_forest"
+local_dir = "models/random_forest"
+mlflow_registered_model = "job-category-random-forest"
+mlflow_model_version = 5
+mlflow_model_id = "m-78adf2d4ac88452c9fddacae8b633366"
+mlflow_run_id = "55504105af03428d9a7b4f59935b13ca"
+model_file = "model.joblib"
+model_sha256 = "2f3d9d3c5654a56bae04372d1bde89e7d42995e51b089d902f1a162d4eec756c"
+label_encoder_file = "label_encoder.pkl"
+label_encoder_sha256 = "8b7e554764318c941039818a564af633aeabf039fccffe14d02bf88e14ab931d"
