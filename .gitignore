@@ -65,7 +65,6 @@ temp/
 /mlruns
 /mlartifacts
 /mlflow.db
-/models/
 
 # Agent configuration
 .agents/
