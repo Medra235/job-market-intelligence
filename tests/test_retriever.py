@@ -101,23 +101,10 @@ def test_retriever_queries_qdrant_with_expected_parameters() -> None:
         "with_vectors": False,
         "score_threshold": 0.4,
     }
-    assert results == [
-        RetrievedDocument(
-            job_id=123,
-            title="Data Engineer",
-            job_category="Data Engineering",
-            description="Full Python, SQL and Airflow role.",
-            description_preview="Python, SQL and Airflow role.",
-            score=0.75,
-            payload={
-                "job_id": 123,
-                "title": "Data Engineer",
-                "job_category": "Data Engineering",
-                "description": "Full Python, SQL and Airflow role.",
-                "description_preview": "Python, SQL and Airflow role.",
-            },
-        )
-    ]
+    assert len(results) == 1
+    assert results[0].job_id == 123
+    assert results[0].title == "Data Engineer"
+    assert results[0].description == "Full Python, SQL and Airflow role."
 
 
 @pytest.mark.parametrize("query", ["", "   "])

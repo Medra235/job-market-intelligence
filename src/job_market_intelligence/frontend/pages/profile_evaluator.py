@@ -18,10 +18,12 @@ def render(client: JobMarketApiClient) -> None:
 
     with st.form("profile-evaluator-form"):
         profile_text = st.text_area(
-            "Texto del perfil",
-            height=220,
+            "Perfil profesional",
+            height=130,
             value=st.session_state.get(PROFILE_TEXT_STATE_KEY, ""),
-            placeholder="Python, SQL, pandas, ETL pipelines, dashboards...",
+            placeholder=(
+                "DevOps engineer with Docker, Kubernetes, Terraform, AWS, CI/CD..."
+            ),
         )
         top_k = st.slider(
             "Fuentes",
@@ -59,14 +61,11 @@ def render(client: JobMarketApiClient) -> None:
 def _render_evaluation_response(response: dict) -> None:
     """Render a profile evaluation response returned by the API."""
     prediction = response["category_prediction"]
-    st.subheader("Predicción")
-    columns = st.columns(3)
-    columns[0].metric("Categoría", prediction["label"])
-    columns[1].metric(
-        "Confianza",
-        _format_optional_percentage(prediction["confidence"]),
+    st.caption(
+        "Área principal estimada: "
+        f"{prediction['label']} "
+        f"({_format_optional_percentage(prediction['confidence'])})"
     )
-    columns[2].metric("Certeza", prediction["certainty"])
 
     st.subheader("Evaluación")
     st.markdown(response["evaluation"])

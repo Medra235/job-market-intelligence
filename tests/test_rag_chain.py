@@ -142,7 +142,7 @@ def test_rag_chain_includes_conversation_memory_on_follow_up() -> None:
         == "What analytics and BI skills complement Data Engineering roles?"
     )
     assert retriever.calls[1]["query"] == second_response.retrieval_query
-    assert "Historial de conversación previo" in generator.prompts[1]
+    assert "Previous conversation history" in generator.prompts[1]
     assert "What should I learn for Data Engineering?" in generator.prompts[1]
     assert "Aprende Python, SQL y Airflow." in generator.prompts[1]
     assert "And for the analytics side?" in generator.prompts[1]

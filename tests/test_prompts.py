@@ -35,20 +35,12 @@ def test_system_prompt_sets_spanish_grounded_behavior() -> None:
     assert "retrieved job postings" in CHATBOT_SYSTEM_PROMPT
     assert "Do not invent" in CHATBOT_SYSTEM_PROMPT
     assert "Do not promise employability" in CHATBOT_SYSTEM_PROMPT
-    assert "Be practical, specific, and complete" in CHATBOT_SYSTEM_PROMPT
-    assert "Use a flexible conversational format" in CHATBOT_SYSTEM_PROMPT
-    assert "always producing a full report" in CHATBOT_SYSTEM_PROMPT
-    assert "simple follow-up questions" in normalized_prompt
-    assert "usually 3 or 4 items are enough" in normalized_prompt
-    assert "cite them with bracketed source numbers" in normalized_prompt
-    assert "Avoid repeating a full skills/gaps/recommendations template" in (
-        normalized_prompt
-    )
+    assert "Be practical" in CHATBOT_SYSTEM_PROMPT
+    assert "Match the structure to the user's question" in CHATBOT_SYSTEM_PROMPT
+    assert "rank 3 or 4 skills by priority" in normalized_prompt
+    assert "cite source numbers" in normalized_prompt
     assert "Be precise about evidence strength" in CHATBOT_SYSTEM_PROMPT
-    assert "not as a broad market trend" in normalized_prompt
-    assert "If the retrieved context is not enough" in CHATBOT_SYSTEM_PROMPT
-    assert "turn one-off evidence into a broad trend" in CHATBOT_SYSTEM_PROMPT
-    assert "Prefer concise complete answers" in CHATBOT_SYSTEM_PROMPT
+    assert "not a broad trend" in normalized_prompt
 
 
 def test_profile_evaluation_system_prompt_is_report_specific() -> None:
@@ -58,11 +50,12 @@ def test_profile_evaluation_system_prompt_is_report_specific() -> None:
     assert "Use classifier certainty as follows" in PROFILE_EVALUATION_SYSTEM_PROMPT
     assert "alta: use the predicted category" in PROFILE_EVALUATION_SYSTEM_PROMPT
     assert "baja: present it as tentative" in PROFILE_EVALUATION_SYSTEM_PROMPT
-    assert "appear explicitly in the user's text" in PROFILE_EVALUATION_SYSTEM_PROMPT
-    assert "Do not classify the seniority" in PROFILE_EVALUATION_SYSTEM_PROMPT
-    assert "ofertas con requisitos más avanzados" in PROFILE_EVALUATION_SYSTEM_PROMPT
-    assert "skills relevantes, ordenadas por prioridad" not in (
+    assert "explicitly mentioned by the user" in PROFILE_EVALUATION_SYSTEM_PROMPT
+    assert "Avoid labeling retrieved postings by seniority" in (
         PROFILE_EVALUATION_SYSTEM_PROMPT
+    )
+    assert "ofertas con requisitos más avanzados" in (
+        PROFILE_EVALUATION_SYSTEM_PROMPT.replace("\n", " ")
     )
 
 
@@ -143,7 +136,7 @@ def test_build_rag_prompt_includes_conversation_history() -> None:
         ],
     )
 
-    assert "Historial de conversación previo" in prompt
+    assert "Previous conversation history" in prompt
     assert "usuario: What should I learn for Data Engineering?" in prompt
     assert "asistente: Python and SQL are core skills." in prompt
     assert "And for the analytics side?" in prompt
@@ -156,13 +149,12 @@ def test_build_rag_prompt_includes_context_and_query() -> None:
         documents=[sample_document()],
     )
 
-    assert "Contexto recuperado de ofertas de empleo" in prompt
+    assert "Retrieved job-posting context" in prompt
     assert "Data Engineer" in prompt
     assert "What should I learn for Data Engineering?" in prompt
-    assert "evidencia principal" in prompt
-    assert "3 recomendaciones accionables, ordenadas por prioridad" not in prompt
-    assert "No conviertas una evidencia puntual en una tendencia general" not in prompt
-    assert "Mantén cada punto breve" not in prompt
+    assert "Answer in Spanish using the retrieved context as the main evidence" in (
+        prompt
+    )
 
 
 @pytest.mark.parametrize("query", ["", "   "])

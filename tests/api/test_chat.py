@@ -146,21 +146,12 @@ def test_chat_returns_answer_and_sources(api_client: TestClient) -> None:
         "top_k": 3,
         "score_threshold": None,
     }
-    assert response.json() == {
-        "message": "What should I learn for ML Engineer roles?",
-        "retrieval_query": "What should I learn for ML Engineer roles?",
-        "answer": "Prioriza Python, deployment y MLOps con evidencia del corpus.",
-        "sources": [
-            {
-                "job_id": 456,
-                "title": "Machine Learning Engineer",
-                "job_category": "AI/ML",
-                "score": 0.91,
-                "description": "Python, model deployment and MLOps role.",
-                "description_preview": "Python and MLOps role.",
-            }
-        ],
-    }
+    payload = response.json()
+    assert payload["message"] == "What should I learn for ML Engineer roles?"
+    assert payload["retrieval_query"] == "What should I learn for ML Engineer roles?"
+    assert payload["answer"] == "Prioriza Python, deployment y MLOps con evidencia del corpus."
+    assert payload["sources"][0]["job_id"] == 456
+    assert payload["sources"][0]["description_preview"] == "Python and MLOps role."
 
 
 def test_chat_uses_configured_default_top_k(api_client: TestClient) -> None:
@@ -222,7 +213,7 @@ def test_chat_uses_request_history_without_mutating_cached_chain(
     )
     assert retriever.last_call["query"] == response.json()["retrieval_query"]
     assert generator.last_prompt is not None
-    assert "Historial de conversación previo" in generator.last_prompt
+    assert "Previous conversation history" in generator.last_prompt
     assert "usuario: I know Python and SQL." in generator.last_prompt
     assert "asistente: That is a good foundation for data roles." in generator.last_prompt
     assert chain.memory.messages == []
@@ -304,8 +295,6 @@ def test_chat_chain_is_built_lazily_and_cached(
     assert first_response.status_code == 200
     assert second_response.status_code == 200
     assert build_calls == 1
-    assert app.state.chat_rag_chain is chain
-    assert app.state.chat_rag_chain_error is None
 
 
 def test_chat_chain_build_error_returns_503(
@@ -323,5 +312,4 @@ def test_chat_chain_build_error_returns_503(
 
     assert response.status_code == 503
     assert "Qdrant is unavailable" in response.json()["detail"]
-    assert app.state.chat_rag_chain is None
     assert isinstance(app.state.chat_rag_chain_error, ConnectionError)

@@ -4,7 +4,6 @@ import pytest
 
 from job_market_intelligence.models.profile_classifier import CategoryPrediction
 from job_market_intelligence.rag.profile_evaluator import (
-    PROFILE_EVALUATION_SYSTEM_PROMPT,
     ProfileEvaluator,
     build_profile_evaluation_prompt,
     estimate_classifier_certainty,
@@ -83,23 +82,24 @@ def test_build_profile_evaluation_prompt_includes_profile_target_and_context() -
         documents=[sample_document()],
     )
 
-    assert "Perfil del usuario" in prompt
+    assert "User profile" in prompt
     assert "Python, SQL, pandas and basic AWS." in prompt
-    assert "Rol objetivo declarado por el usuario" in prompt
+    assert "Target role declared by the user" in prompt
     assert "Data Engineer" in prompt
-    assert "Ofertas recuperadas como referencia de mercado" in prompt
-    assert "Usa exactamente esta" in prompt
-    assert "- **Resumen del encaje**:" in prompt
+    assert "Retrieved postings used as market evidence" in prompt
+    assert "Answer in Spanish and use" in prompt
+    assert "Start with 2-3 short sentences summarizing the overall fit" in prompt
+    assert "- **Resumen del encaje**:" not in prompt
     assert "- **Skills detectadas en el perfil**:" in prompt
     assert "Fundamentos de entrada ya cubiertos" in prompt
-    assert "Siguientes pasos prácticos" in prompt
     assert "Gaps avanzados o aspiracionales" in prompt
-    assert "Agrupa las skills explícitas por tipo" in prompt
-    assert '"AWS Core", "Herramientas de IaC"' in prompt
-    assert "Agrupa gaps relacionados" in prompt
-    assert "Da una recomendación priorizada y accionable" in prompt
-    assert "ofertas con requisitos más avanzados" not in prompt
-    assert "score orientativo de competitividad" not in prompt
+    assert "Siguientes pasos priorizados" in prompt
+    assert prompt.index("Gaps avanzados o aspiracionales") < prompt.index(
+        "Siguientes pasos priorizados"
+    )
+    assert "Group explicit skills by type" in prompt
+    assert "Group related gaps" in prompt
+    assert "prioritized, actionable recommendation" in prompt
     assert "score=0.8000" not in prompt
 
 
@@ -116,23 +116,9 @@ def test_build_profile_evaluation_prompt_includes_classifier_signal() -> None:
         documents=[sample_document()],
     )
 
-    assert "Resultado del clasificador ML" in prompt
-    assert "categoría probable: Data Engineering" in prompt
-    assert "confidence: 0.74" not in prompt
-    assert "certeza estimada: alta" in prompt
-    assert "modelo: random_forest" not in prompt
-
-
-def test_profile_evaluation_system_prompt_includes_classifier_certainty_rules() -> None:
-    """Classifier weighting rules should live in the evaluator system prompt."""
-    system_prompt = PROFILE_EVALUATION_SYSTEM_PROMPT.replace("\n", " ")
-
-    assert "Use classifier certainty as follows" in PROFILE_EVALUATION_SYSTEM_PROMPT
-    assert "alta: use the predicted category as the main evaluation frame" in (
-        system_prompt
-    )
-    assert "baja: present it as tentative" in system_prompt
-    assert "Do not add implicit or assumed skills" in system_prompt
+    assert "ML classifier result" in prompt
+    assert "likely category: Data Engineering" in prompt
+    assert "estimated certainty: alta" in prompt
 
 
 @pytest.mark.parametrize(
@@ -183,7 +169,7 @@ def test_profile_evaluator_retrieves_builds_prompt_and_generates_evaluation() ->
     assert response.documents[0].job_id == 123
     system_prompt = generator.last_call["system_prompt"].replace("\n", " ")
     assert "junior, self-taught, bootcamp" in system_prompt
-    assert "aspirational market evidence" in system_prompt
+    assert "aspirational roadmap evidence" in system_prompt
 
 
 def test_profile_evaluator_adds_category_prediction_when_classifier_is_present() -> None:
@@ -209,7 +195,7 @@ def test_profile_evaluator_adds_category_prediction_when_classifier_is_present()
         confidence=0.74,
         model_type="random_forest",
     )
-    assert "categoría probable: Data Engineering" in generator.last_call["prompt"]
+    assert "likely category: Data Engineering" in generator.last_call["prompt"]
 
 
 def test_profile_evaluator_uses_predicted_category_for_retrieval_without_target() -> None:

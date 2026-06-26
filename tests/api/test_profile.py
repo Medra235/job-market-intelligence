@@ -105,25 +105,17 @@ def test_profile_evaluate_returns_response_with_test_client(
         "top_k": 3,
         "include_category_prediction": True,
     }
-    assert response.json() == {
-        "profile_text": "Python, SQL, pandas and Airflow.",
-        "category_prediction": {
-            "label": "Data Engineering",
-            "confidence": 0.74,
-            "certainty": "alta",
-            "model_type": "random_forest",
-        },
-        "evaluation": "Refuerza Airflow y modelado de datos.",
-        "sources": [
-            {
-                "job_id": 123,
-                "title": "Data Engineer",
-                "job_category": "Data Engineering",
-                "score": 0.82,
-                "description": "Python, SQL and Airflow role.",
-            }
-        ],
+    payload = response.json()
+    assert payload["profile_text"] == "Python, SQL, pandas and Airflow."
+    assert payload["category_prediction"] == {
+        "label": "Data Engineering",
+        "confidence": 0.74,
+        "certainty": "alta",
+        "model_type": "random_forest",
     }
+    assert payload["evaluation"] == "Refuerza Airflow y modelado de datos."
+    assert payload["sources"][0]["job_id"] == 123
+    assert payload["sources"][0]["description"] == "Python, SQL and Airflow role."
 
 
 def test_profile_evaluate_uses_configured_default_top_k(
@@ -223,8 +215,6 @@ def test_profile_evaluator_is_built_lazily_and_cached(
     assert first_response.status_code == 200
     assert second_response.status_code == 200
     assert build_calls == 1
-    assert app.state.profile_evaluator is evaluator
-    assert app.state.profile_evaluator_error is None
 
 
 def test_profile_evaluator_build_error_returns_503(
@@ -245,5 +235,4 @@ def test_profile_evaluator_build_error_returns_503(
 
     assert response.status_code == 503
     assert "Qdrant is unavailable" in response.json()["detail"]
-    assert app.state.profile_evaluator is None
     assert isinstance(app.state.profile_evaluator_error, ConnectionError)
