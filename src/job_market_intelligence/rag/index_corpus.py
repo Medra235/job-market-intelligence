@@ -10,10 +10,10 @@ import argparse
 import logging
 from pathlib import Path
 
-import pandas as pd  # noqa: E402
-from qdrant_client import QdrantClient  # noqa: E402
-from qdrant_client.models import Distance, PointStruct, VectorParams  # noqa: E402
-from sentence_transformers import SentenceTransformer  # noqa: E402
+import pandas as pd
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, PointStruct, VectorParams
+from sentence_transformers import SentenceTransformer
 
 from job_market_intelligence.config.settings import settings
 

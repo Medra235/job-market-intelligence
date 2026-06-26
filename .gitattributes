@@ -1,4 +1,6 @@
-# filter=nbstripout keeps git history clean by removing heavy notebook outputs
+# linguist-documentation keeps notebooks out of GitHub language statistics.
+# filter=nbstripout keeps git history clean by removing heavy notebook outputs.
+# diff=ipynb uses the local git diff driver configured by nbstripout.
 *.ipynb linguist-documentation filter=nbstripout diff=ipynb
 
 # Normalize line endings (prevents Windows/Linux format conflicts)

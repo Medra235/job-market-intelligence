@@ -21,14 +21,19 @@ def build_llm_generator(settings: Settings) -> TextGenerator:
     )
 
 
-def build_profile_evaluator(settings: Settings) -> ProfileEvaluator:
-    """Build the shared profile evaluator from API runtime settings."""
-    retriever = QdrantRetriever(
+def build_qdrant_retriever(settings: Settings) -> QdrantRetriever:
+    """Build the Qdrant retriever from API runtime settings."""
+    return QdrantRetriever(
         collection_name=settings.qdrant_collection,
         model_name=settings.embedding_model,
         qdrant_url=settings.qdrant_url,
         local_files_only=settings.embedding_local_files_only,
     )
+
+
+def build_profile_evaluator(settings: Settings) -> ProfileEvaluator:
+    """Build the shared profile evaluator from API runtime settings."""
+    retriever = build_qdrant_retriever(settings)
     generator = build_llm_generator(settings)
     category_classifier = JobCategoryClassifier(
         model_type=settings.classifier_model_type,
@@ -45,12 +50,7 @@ def build_profile_evaluator(settings: Settings) -> ProfileEvaluator:
 
 def build_chat_rag_chain(settings: Settings) -> JobMarketRagChain:
     """Build the shared RAG chatbot dependencies from API runtime settings."""
-    retriever = QdrantRetriever(
-        collection_name=settings.qdrant_collection,
-        model_name=settings.embedding_model,
-        qdrant_url=settings.qdrant_url,
-        local_files_only=settings.embedding_local_files_only,
-    )
+    retriever = build_qdrant_retriever(settings)
     generator = build_llm_generator(settings)
     return JobMarketRagChain(
         retriever=retriever,

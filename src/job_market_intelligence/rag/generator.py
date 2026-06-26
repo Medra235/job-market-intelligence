@@ -100,19 +100,3 @@ class LlamaCppGenerator:
         if not content:
             raise RuntimeError("llama.cpp returned an empty response.")
         return content.strip()
-
-
-def generate_answer(
-    prompt: str,
-    system_prompt: str | None = None,
-    model_name: str = settings.llamacpp_model,
-    base_url: str = settings.llamacpp_url,
-    config: GenerationConfig | None = None,
-) -> str:
-    """Convenience function for one-off llama.cpp generation calls."""
-    generator = LlamaCppGenerator(model_name=model_name, base_url=base_url)
-    return generator.generate(
-        prompt=prompt,
-        system_prompt=system_prompt,
-        config=config,
-    )

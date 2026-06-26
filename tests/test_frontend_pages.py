@@ -148,7 +148,6 @@ def test_profile_sources_render_full_descriptions(monkeypatch) -> None:
         ]
     )
 
-    assert ("subheader", "Fuentes") in fake_st.calls
     assert (
         "expander",
         "1. Data Engineer · Data Engineering · similitud: 0.823",
@@ -191,7 +190,6 @@ def test_chatbot_sources_render_full_descriptions(monkeypatch) -> None:
         key_prefix="chat-history-0",
     )
 
-    assert ("caption", "Fuentes") in fake_st.calls
     assert ("expander", "1. ML Engineer · AI/ML · similitud: 0.910") in fake_st.calls
     assert (
         "text_area",

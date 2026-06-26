@@ -42,6 +42,12 @@ Restore processed data and classifier artifacts using one of these paths:
   [`full_reproduction.md`](full_reproduction.md)
 - for maintainers only, restore the artifacts from the private DVC remote
 
+Create the target directories if needed:
+
+```bash
+mkdir -p data/processed models/random_forest
+```
+
 Expected local paths:
 
 ```text
